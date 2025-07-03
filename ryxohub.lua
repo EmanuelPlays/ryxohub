@@ -630,4 +630,4 @@ Aimbot: Hold Right Mouse Button to activate
 ]])
 
 -- Initialize with menu closed
-MenuOpen = false
+MenuOpen = true
