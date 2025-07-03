@@ -888,7 +888,7 @@ end
 
 -- GUI Creation
 local CheatMenuGUI = nil
-local MenuOpen = true
+local MenuOpen = false
 
 local function toggleMenu()
     MenuOpen = not MenuOpen
@@ -913,4 +913,142 @@ local function toggleMenu()
         Title.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
         Title.TextColor3 = Color3.new(1, 1, 1)
         Title.Font = Enum.Font.SourceSansBold
-        Title
+        Title.Parent = Frame
+
+        local ScrollingFrame = Instance.new("ScrollingFrame")
+        ScrollingFrame.Size = UDim2.new(1, 0, 1, -40)
+        ScrollingFrame.Position = UDim2.new(0, 0, 0, 30)
+        ScrollingFrame.BackgroundTransparency = 1
+        ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 1000)
+        ScrollingFrame.ScrollBarThickness = 5
+        ScrollingFrame.Parent = Frame
+
+        local yOffset = 10
+        local buttonHeight = 35
+
+        local function createButton(text, toggleFunc, getStateFunc, settingsTable)
+            local button = Instance.new("TextButton")
+            button.Size = UDim2.new(0.9, 0, 0, 30)
+            button.Position = UDim2.new(0.05, 0, 0, yOffset)
+            button.Text = text..": "..(getStateFunc() and "ON" or "OFF")
+            button.TextColor3 = Color3.new(1, 1, 1)
+            button.BackgroundColor3 = getStateFunc() and Color3.fromRGB(50, 150, 50) or Color3.fromRGB(150, 50, 50)
+            button.Parent = ScrollingFrame
+            
+            local settingsMenu = nil
+            if settingsTable then
+                settingsMenu = createSettingsMenu(button, settingsTable, text)
+            end
+            
+            button.MouseButton1Click:Connect(function()
+                animateButtonClick(button)
+                toggleFunc()
+                button.Text = text..": "..(getStateFunc() and "ON" or "OFF")
+                button.BackgroundColor3 = getStateFunc() and Color3.fromRGB(50, 150, 50) or Color3.fromRGB(150, 50, 50)
+            end)
+            
+            button.MouseButton2Click:Connect(function()
+                if settingsMenu then
+                    if settingsMenu.Visible then
+                        animateSettingsClose(settingsMenu)
+                    else
+                        animateSettingsOpen(settingsMenu)
+                    end
+                end
+            end)
+            
+            yOffset = yOffset + buttonHeight
+            return button
+        end
+
+        -- Create buttons
+        createButton("Fly", toggleFly, function() return flyEnabled end, {flySpeed = flySpeed})
+        createButton("Noclip", toggleNoclip, function() return noclip end)
+        createButton("Speed Hack", function() setSpeed(walkSpeed == 16 and 50 or 16) end, function() return walkSpeed > 16 end, {walkSpeed = walkSpeed})
+        createButton("ESP", toggleESP, function() return espEnabled end, espSettings)
+        createButton("Aimbot", toggleAimbot, function() return aimbotSettings.Enabled end, aimbotSettings)
+        createButton("Triggerbot", toggleTriggerbot, function() return triggerbotSettings.Enabled end, triggerbotSettings)
+        createButton("Silent Aim", function() silentAim = not silentAim end, function() return silentAim end, silentAimSettings)
+        createButton("Infinite Jump", toggleInfiniteJump, function() return infiniteJump end)
+        createButton("Bunny Hop", toggleBunnyHop, function() return bhopEnabled end)
+        createButton("Fullbright", toggleFullbright, function() return fullBright end)
+        createButton("X-Ray", toggleXray, function() return xray end)
+        createButton("Anti-AFK", toggleAntiAFK, function() return antiAfk end)
+        createButton("B-Tools", toggleBTools, function() return btoolsEnabled end)
+        createButton("No Recoil", toggleNoRecoil, function() return noRecoil end)
+        createButton("No Spread", toggleNoSpread, function() return noSpread end)
+        createButton("Rapid Fire", toggleRapidFire, function() return rapidFire end)
+        createButton("Third Person", toggleThirdPerson, function() return thirdPerson end)
+        createButton("FOV Changer", toggleFOVChanger, function() return fovChangerEnabled end, {fovValue = fovValue})
+        createButton("Night Vision", toggleNightVision, function() return nightVision end)
+        createButton("No Fog", toggleNoFog, function() return noFog end)
+        createButton("Hitbox Expander", toggleHitboxExpander, function() return hitboxExpander end, {hitboxMultiplier = hitboxMultiplier})
+        createButton("Auto Parry", toggleAutoParry, function() return autoParry end)
+        createButton("Anti Void", toggleAntiVoid, function() return antiVoid end)
+        createButton("Gravity Control", toggleGravity, function() return not gravityEnabled end, {gravityValue = gravityValue})
+
+        -- Close button
+        local CloseButton = Instance.new("TextButton")
+        CloseButton.Size = UDim2.new(0.9, 0, 0, 30)
+        CloseButton.Position = UDim2.new(0.05, 0, 0, yOffset)
+        CloseButton.Text = "Close Menu"
+        CloseButton.TextColor3 = Color3.new(1, 1, 1)
+        CloseButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+        CloseButton.Parent = ScrollingFrame
+
+        CloseButton.MouseButton1Click:Connect(function()
+            animateButtonClick(CloseButton)
+            toggleMenu()
+        end)
+
+        -- Update canvas size
+        ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, yOffset + 40)
+
+        -- Animate menu open
+        animateMenuOpen(Frame)
+    else
+        if CheatMenuGUI then
+            animateMenuClose(CheatMenuGUI:FindFirstChild("Frame"), function()
+                CheatMenuGUI:Destroy()
+            end)
+        end
+    end
+end
+
+-- Keybind to open menu (F5)
+UIS.InputBegan:Connect(function(input, gameProcessed)
+    if not gameProcessed and input.KeyCode == Enum.KeyCode.F5 then
+        toggleMenu()
+    end
+end)
+
+-- Infinite Jump
+UIS.InputBegan:Connect(function(input, gameProcessed)
+    if not gameProcessed and input.KeyCode == Enum.KeyCode.Space and infiniteJump then
+        LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState(Enum.HumanoidStateType.Jumping)
+    end
+end)
+
+-- Set initial walk speed
+if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+    LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = walkSpeed
+end
+
+-- Character added event
+LocalPlayer.CharacterAdded:Connect(function(character)
+    if character:FindFirstChildOfClass("Humanoid") then
+        character:FindFirstChildOfClass("Humanoid").WalkSpeed = walkSpeed
+    end
+end)
+
+print([[
+=== Ultimate Cheat Menu Loaded ===
+Press F5 to open/close menu
+Left-click buttons to toggle features
+Right-click buttons with settings to configure
+Aimbot: Hold Right Mouse Button to activate
+]])
+
+-- Initialize with menu closed
+MenuOpen = true
+toggleMenu()
