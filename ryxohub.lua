@@ -39,8 +39,8 @@ local function animateMenuOpen(frame)
     frame.Size = UDim2.new(0, 0, 0, 0)
     frame.Position = UDim2.new(0.5, 0, 0.5, 0)
     
-    tweenProperty(frame, "Size", UDim2.new(0, 350, 0, 500), 0.3, Enum.EasingStyle.Back)
-    tweenProperty(frame, "Position", UDim2.new(0.5, -175, 0.5, -250), 0.3, Enum.EasingStyle.Back)
+    tweenProperty(frame, "Size", UDim2.new(0, 450, 0, 600), 0.3, Enum.EasingStyle.Back) -- Increased size
+    tweenProperty(frame, "Position", UDim2.new(0.5, -225, 0.5, -300), 0.3, Enum.EasingStyle.Back) -- Adjusted position
 end
 
 local function animateMenuClose(frame, callback)
@@ -57,7 +57,7 @@ local function animateSettingsOpen(settingsFrame)
     settingsFrame.Visible = true
     settingsFrame.Size = UDim2.new(0, 0, 0, 0)
     
-    tweenProperty(settingsFrame, "Size", UDim2.new(0, 250, 0, 250), 0.2)
+    tweenProperty(settingsFrame, "Size", UDim2.new(0, 350, 0, 350), 0.2) -- Increased size
 end
 
 local function animateSettingsClose(settingsFrame)
@@ -121,6 +121,14 @@ local autoParry = false
 local antiVoid = false
 local gravityEnabled = true
 local gravityValue = 196.2
+local fpsBoostEnabled = false
+local fpsBoostSettings = {
+    GraphicsQualityLevel = 1,
+    Shadows = false,
+    Rendering = false,
+    Particles = false,
+    TextureQuality = 1
+}
 
 -- Aimbot Settings
 local aimbotSettings = {
@@ -176,6 +184,94 @@ FOVCircle.Visible = aimbotSettings.FOVVisible
 FOVCircle.Transparency = 0.7
 FOVCircle.NumSides = 64
 FOVCircle.Thickness = 1
+
+-- FPS Boost function
+local function toggleFPSBoost()
+    fpsBoostEnabled = not fpsBoostEnabled
+    
+    if fpsBoostEnabled then
+        -- Save current settings
+        fpsBoostSettings.GraphicsQualityLevel = settings().Rendering.QualityLevel
+        fpsBoostSettings.Shadows = Lighting.GlobalShadows
+        fpsBoostSettings.Rendering = settings().Rendering.EnableFRM
+        fpsBoostSettings.Particles = settings().Rendering.EagerBulkExecution
+        fpsBoostSettings.TextureQuality = settings().Rendering.TextureQuality
+        
+        -- Apply FPS boost settings
+        settings().Rendering.QualityLevel = 1
+        Lighting.GlobalShadows = false
+        settings().Rendering.EnableFRM = false
+        settings().Rendering.EagerBulkExecution = false
+        settings().Rendering.TextureQuality = 1
+        Lighting.Outlines = false
+        Workspace.Terrain.Decoration = false
+        
+        -- Optimize character rendering
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character then
+                for _, part in pairs(player.Character:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.Material = Enum.Material.Plastic
+                        part.Reflectance = 0
+                    elseif part:IsA("Decal") then
+                        part.Transparency = 1
+                    elseif part:IsA("ParticleEmitter") or part:IsA("Trail") then
+                        part.Enabled = false
+                    end
+                end
+            end
+        end
+        
+        -- Optimize workspace
+        for _, instance in pairs(Workspace:GetDescendants()) do
+            if instance:IsA("BasePart") then
+                instance.Material = Enum.Material.Plastic
+                instance.Reflectance = 0
+            elseif instance:IsA("Decal") then
+                instance.Transparency = 1
+            elseif instance:IsA("ParticleEmitter") or instance:IsA("Trail") then
+                instance.Enabled = false
+            end
+        end
+    else
+        -- Restore original settings
+        settings().Rendering.QualityLevel = fpsBoostSettings.GraphicsQualityLevel
+        Lighting.GlobalShadows = fpsBoostSettings.Shadows
+        settings().Rendering.EnableFRM = fpsBoostSettings.Rendering
+        settings().Rendering.EagerBulkExecution = fpsBoostSettings.Particles
+        settings().Rendering.TextureQuality = fpsBoostSettings.TextureQuality
+        Lighting.Outlines = true
+        Workspace.Terrain.Decoration = true
+        
+        -- Restore character rendering
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character then
+                for _, part in pairs(player.Character:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.Material = Enum.Material.Plastic
+                        part.Reflectance = 0.5
+                    elseif part:IsA("Decal") then
+                        part.Transparency = 0
+                    elseif part:IsA("ParticleEmitter") or part:IsA("Trail") then
+                        part.Enabled = true
+                    end
+                end
+            end
+        end
+        
+        -- Restore workspace
+        for _, instance in pairs(Workspace:GetDescendants()) do
+            if instance:IsA("BasePart") then
+                instance.Material = Enum.Material.Plastic
+                instance.Reflectance = 0.5
+            elseif instance:IsA("Decal") then
+                instance.Transparency = 0
+            elseif instance:IsA("ParticleEmitter") or instance:IsA("Trail") then
+                instance.Enabled = true
+            end
+        end
+    end
+end
 
 -- Fly system
 local flyConnection
@@ -734,7 +830,7 @@ local function createSettingsMenu(parentFrame, settingsTable, settingName)
     scrollFrame.Parent = settingsMenu
     
     local yOffset = 5
-    local elementHeight = 25
+    local elementHeight = 30 -- Increased height for better visibility
     
     for setting, value in pairs(settingsTable) do
         if type(value) == "boolean" then
@@ -743,6 +839,7 @@ local function createSettingsMenu(parentFrame, settingsTable, settingName)
             toggle.Position = UDim2.new(0.05, 0, 0, yOffset)
             toggle.Text = setting..": "..(value and "ON" or "OFF")
             toggle.TextColor3 = Color3.new(1, 1, 1)
+            toggle.TextSize = 14 -- Larger text
             toggle.BackgroundColor3 = value and Color3.fromRGB(50, 150, 50) or Color3.fromRGB(150, 50, 50)
             toggle.Parent = scrollFrame
             
@@ -771,6 +868,7 @@ local function createSettingsMenu(parentFrame, settingsTable, settingName)
             label.Position = UDim2.new(0.05, 0, 0, yOffset)
             label.Text = setting..": "..value
             label.TextColor3 = Color3.new(1, 1, 1)
+            label.TextSize = 14 -- Larger text
             label.BackgroundTransparency = 1
             label.Parent = scrollFrame
             yOffset = yOffset + elementHeight
@@ -780,6 +878,7 @@ local function createSettingsMenu(parentFrame, settingsTable, settingName)
             increase.Position = UDim2.new(0.05, 0, 0, yOffset)
             increase.Text = "+"
             increase.TextColor3 = Color3.new(1, 1, 1)
+            increase.TextSize = 14 -- Larger text
             increase.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
             increase.Parent = scrollFrame
             
@@ -788,6 +887,7 @@ local function createSettingsMenu(parentFrame, settingsTable, settingName)
             decrease.Position = UDim2.new(0.525, 0, 0, yOffset)
             decrease.Text = "-"
             decrease.TextColor3 = Color3.new(1, 1, 1)
+            decrease.TextSize = 14 -- Larger text
             decrease.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
             decrease.Parent = scrollFrame
             
@@ -838,6 +938,7 @@ local function createSettingsMenu(parentFrame, settingsTable, settingName)
             label.Position = UDim2.new(0.05, 0, 0, yOffset)
             label.Text = setting..": "..value
             label.TextColor3 = Color3.new(1, 1, 1)
+            label.TextSize = 14 -- Larger text
             label.BackgroundTransparency = 1
             label.Parent = scrollFrame
             yOffset = yOffset + elementHeight
@@ -847,6 +948,7 @@ local function createSettingsMenu(parentFrame, settingsTable, settingName)
             nextButton.Position = UDim2.new(0.05, 0, 0, yOffset)
             nextButton.Text = "Next"
             nextButton.TextColor3 = Color3.new(1, 1, 1)
+            nextButton.TextSize = 14 -- Larger text
             nextButton.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
             nextButton.Parent = scrollFrame
             
@@ -855,6 +957,7 @@ local function createSettingsMenu(parentFrame, settingsTable, settingName)
             prevButton.Position = UDim2.new(0.525, 0, 0, yOffset)
             prevButton.Text = "Prev"
             prevButton.TextColor3 = Color3.new(1, 1, 1)
+            prevButton.TextSize = 14 -- Larger text
             prevButton.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
             prevButton.Parent = scrollFrame
             
@@ -907,31 +1010,33 @@ local function toggleMenu()
         Frame.Parent = CheatMenuGUI
 
         local Title = Instance.new("TextLabel")
-        Title.Size = UDim2.new(1, 0, 0, 30)
+        Title.Size = UDim2.new(1, 0, 0, 40) -- Taller title bar
         Title.Position = UDim2.new(0, 0, 0, 0)
         Title.Text = "Ultimate Cheat Menu - "..currentGame
         Title.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
         Title.TextColor3 = Color3.new(1, 1, 1)
+        Title.TextSize = 18 -- Larger title text
         Title.Font = Enum.Font.SourceSansBold
         Title.Parent = Frame
 
         local ScrollingFrame = Instance.new("ScrollingFrame")
-        ScrollingFrame.Size = UDim2.new(1, 0, 1, -40)
-        ScrollingFrame.Position = UDim2.new(0, 0, 0, 30)
+        ScrollingFrame.Size = UDim2.new(1, 0, 1, -50) -- Adjusted for taller title
+        ScrollingFrame.Position = UDim2.new(0, 0, 0, 40) -- Adjusted for taller title
         ScrollingFrame.BackgroundTransparency = 1
-        ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 1000)
-        ScrollingFrame.ScrollBarThickness = 5
+        ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 1200) -- Larger canvas
+        ScrollingFrame.ScrollBarThickness = 8 -- Thicker scrollbar
         ScrollingFrame.Parent = Frame
 
         local yOffset = 10
-        local buttonHeight = 35
+        local buttonHeight = 40 -- Taller buttons
 
         local function createButton(text, toggleFunc, getStateFunc, settingsTable)
             local button = Instance.new("TextButton")
-            button.Size = UDim2.new(0.9, 0, 0, 30)
+            button.Size = UDim2.new(0.9, 0, 0, buttonHeight)
             button.Position = UDim2.new(0.05, 0, 0, yOffset)
             button.Text = text..": "..(getStateFunc() and "ON" or "OFF")
             button.TextColor3 = Color3.new(1, 1, 1)
+            button.TextSize = 16 -- Larger button text
             button.BackgroundColor3 = getStateFunc() and Color3.fromRGB(50, 150, 50) or Color3.fromRGB(150, 50, 50)
             button.Parent = ScrollingFrame
             
@@ -957,7 +1062,7 @@ local function toggleMenu()
                 end
             end)
             
-            yOffset = yOffset + buttonHeight
+            yOffset = yOffset + buttonHeight + 5 -- More spacing between buttons
             return button
         end
 
@@ -966,7 +1071,7 @@ local function toggleMenu()
         createButton("Noclip", toggleNoclip, function() return noclip end)
         createButton("Speed Hack", function() setSpeed(walkSpeed == 16 and 50 or 16) end, function() return walkSpeed > 16 end, {walkSpeed = walkSpeed})
         createButton("ESP", toggleESP, function() return espEnabled end, espSettings)
-        createButton("Aimbot", toggleAimbot, function() return aimbotSettings.Enabled end, aimbotSettings)
+        createButton("Aimbot", function() aimbotSettings.Enabled = not aimbotSettings.Enabled end, function() return aimbotSettings.Enabled end, aimbotSettings)
         createButton("Triggerbot", toggleTriggerbot, function() return triggerbotSettings.Enabled end, triggerbotSettings)
         createButton("Silent Aim", function() silentAim = not silentAim end, function() return silentAim end, silentAimSettings)
         createButton("Infinite Jump", toggleInfiniteJump, function() return infiniteJump end)
@@ -986,13 +1091,15 @@ local function toggleMenu()
         createButton("Auto Parry", toggleAutoParry, function() return autoParry end)
         createButton("Anti Void", toggleAntiVoid, function() return antiVoid end)
         createButton("Gravity Control", toggleGravity, function() return not gravityEnabled end, {gravityValue = gravityValue})
+        createButton("FPS Boost", toggleFPSBoost, function() return fpsBoostEnabled end, fpsBoostSettings)
 
         -- Close button
         local CloseButton = Instance.new("TextButton")
-        CloseButton.Size = UDim2.new(0.9, 0, 0, 30)
+        CloseButton.Size = UDim2.new(0.9, 0, 0, 40) -- Taller close button
         CloseButton.Position = UDim2.new(0.05, 0, 0, yOffset)
         CloseButton.Text = "Close Menu"
         CloseButton.TextColor3 = Color3.new(1, 1, 1)
+        CloseButton.TextSize = 16 -- Larger text
         CloseButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
         CloseButton.Parent = ScrollingFrame
 
@@ -1002,7 +1109,7 @@ local function toggleMenu()
         end)
 
         -- Update canvas size
-        ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, yOffset + 40)
+        ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, yOffset + 50)
 
         -- Animate menu open
         animateMenuOpen(Frame)
