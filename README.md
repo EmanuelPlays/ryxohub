@@ -12,6 +12,8 @@ By using this website, you acknowledge and agree to the following:
 
 - **External Links**: This website may contain links to external sites. I do not endorse or take responsibility for the content or practices of these sites.
 
+- **Copyright Notice**: If you had copied this code via AI thats ok but if you copy it from this source, you can edit as long you put the credits in code and in source,
+
 ## Features
 
 - Cheat gui
