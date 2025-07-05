@@ -39,8 +39,8 @@ local function animateMenuOpen(frame)
     frame.Size = UDim2.new(0, 0, 0, 0)
     frame.Position = UDim2.new(0.5, 0, 0.5, 0)
     
-    tweenProperty(frame, "Size", UDim2.new(0, 450, 0, 600), 0.3, Enum.EasingStyle.Back) -- Increased size
-    tweenProperty(frame, "Position", UDim2.new(0.5, -225, 0.5, -300), 0.3, Enum.EasingStyle.Back) -- Adjusted position
+    tweenProperty(frame, "Size", UDim2.new(0, 450, 0, 600), 0.3, Enum.EasingStyle.Back)
+    tweenProperty(frame, "Position", UDim2.new(0.5, -225, 0.5, -300), 0.3, Enum.EasingStyle.Back)
 end
 
 local function animateMenuClose(frame, callback)
@@ -56,14 +56,19 @@ end
 local function animateSettingsOpen(settingsFrame)
     settingsFrame.Visible = true
     settingsFrame.Size = UDim2.new(0, 0, 0, 0)
+    settingsFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
     
-    tweenProperty(settingsFrame, "Size", UDim2.new(0, 350, 0, 350), 0.2) -- Increased size
+    tweenProperty(settingsFrame, "Size", UDim2.new(0, 400, 0, 500), 0.2, Enum.EasingStyle.Back)
+    tweenProperty(settingsFrame, "Position", UDim2.new(0.5, -200, 0.5, -250), 0.2, Enum.EasingStyle.Back)
 end
 
-local function animateSettingsClose(settingsFrame)
-    tweenProperty(settingsFrame, "Size", UDim2.new(0, 0, 0, 0), 0.2)
+local function animateSettingsClose(settingsFrame, callback)
+    tweenProperty(settingsFrame, "Size", UDim2.new(0, 0, 0, 0), 0.2, Enum.EasingStyle.Back, Enum.EasingDirection.In)
+    tweenProperty(settingsFrame, "Position", UDim2.new(0.5, 0, 0.5, 0), 0.2, Enum.EasingStyle.Back, Enum.EasingDirection.In)
+    
     task.delay(0.2, function()
         settingsFrame.Visible = false
+        if callback then callback() end
     end)
 end
 
@@ -130,15 +135,9 @@ local fpsBoostSettings = {
     TextureQuality = 1
 }
 
--- Resizing variables
-local isResizing = false
-local resizeStartPosition = nil
-local resizeStartSize = nil
-local minSize = Vector2.new(300, 400) -- Minimum size for the GUI
-
 -- Aimbot Settings
 local aimbotSettings = {
-    Enabled = true,
+    Enabled = false,
     TeamCheck = false,
     AimPart = "Head",
     Sensitivity = 0.1,
@@ -186,10 +185,68 @@ FOVCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.
 FOVCircle.Radius = aimbotSettings.FOV
 FOVCircle.Filled = false
 FOVCircle.Color = Color3.fromRGB(255, 255, 255)
-FOVCircle.Visible = aimbotSettings.FOVVisible
+FOVCircle.Visible = aimbotSettings.FOVVisible and aimbotSettings.Enabled
 FOVCircle.Transparency = 0.7
 FOVCircle.NumSides = 64
 FOVCircle.Thickness = 1
+
+-- Working Aimbot Function
+local aimbotConnection
+local function toggleAimbot()
+    aimbotSettings.Enabled = not aimbotSettings.Enabled
+    FOVCircle.Visible = aimbotSettings.Enabled and aimbotSettings.FOVVisible
+    
+    if aimbotSettings.Enabled then
+        aimbotConnection = RunService.RenderStepped:Connect(function()
+            if not aimbotSettings.Enabled or not aimbotSettings.Holding then return end
+            
+            local closestPlayer = nil
+            local closestDistance = aimbotSettings.FOV
+            local mousePos = UIS:GetMouseLocation()
+            
+            for _, player in pairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character then
+                    local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+                    local rootPart = player.Character:FindFirstChild("HumanoidRootPart")
+                    
+                    if humanoid and humanoid.Health > 0 and rootPart then
+                        if aimbotSettings.TeamCheck and player.Team == LocalPlayer.Team then continue end
+                        
+                        local screenPoint, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
+                        if onScreen then
+                            local distance = (Vector2.new(mousePos.X, mousePos.Y) - Vector2.new(screenPoint.X, screenPoint.Y)).Magnitude
+                            
+                            if distance < closestDistance then
+                                closestDistance = distance
+                                closestPlayer = player
+                            end
+                        end
+                    end
+                end
+            end
+            
+            if closestPlayer and closestPlayer.Character then
+                local targetPart = closestPlayer.Character:FindFirstChild(aimbotSettings.AimPart)
+                if targetPart then
+                    local screenPoint = Camera:WorldToViewportPoint(targetPart.Position)
+                    local currentMousePos = UIS:GetMouseLocation()
+                    local targetPos = Vector2.new(screenPoint.X, screenPoint.Y)
+                    
+                    -- Apply smoothing
+                    local delta = (targetPos - currentMousePos) * aimbotSettings.Sensitivity
+                    delta = delta / aimbotSettings.Smoothing
+                    
+                    mousemoverel(delta.X, delta.Y)
+                end
+            end
+        end)
+    else
+        if aimbotConnection then
+            aimbotConnection:Disconnect()
+            aimbotConnection = nil
+        end
+    end
+end
 
 -- FPS Boost function
 local function toggleFPSBoost()
@@ -498,46 +555,6 @@ local function toggleESP()
     end
 end
 
--- Aimbot Functions
-local function GetClosestPlayer()
-    local MaximumDistance = aimbotSettings.FOV
-    local Target = nil
-
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer then
-            if aimbotSettings.TeamCheck == true then
-                if player.Team ~= LocalPlayer.Team then
-                    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                        if player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
-                            local ScreenPoint = Camera:WorldToScreenPoint(player.Character.HumanoidRootPart.Position)
-                            local VectorDistance = (Vector2.new(UIS:GetMouseLocation().X, UIS:GetMouseLocation().Y) - Vector2.new(ScreenPoint.X, ScreenPoint.Y)).Magnitude
-                            
-                            if VectorDistance < MaximumDistance then
-                                Target = player
-                                MaximumDistance = VectorDistance
-                            end
-                        end
-                    end
-                end
-            else
-                if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                    if player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
-                        local ScreenPoint = Camera:WorldToScreenPoint(player.Character.HumanoidRootPart.Position)
-                        local VectorDistance = (Vector2.new(UIS:GetMouseLocation().X, UIS:GetMouseLocation().Y) - Vector2.new(ScreenPoint.X, ScreenPoint.Y)).Magnitude
-                        
-                        if VectorDistance < MaximumDistance then
-                            Target = player
-                            MaximumDistance = VectorDistance
-                        end
-                    end
-                end
-            end
-        end
-    end
-
-    return Target
-end
-
 -- Aimbot Connections
 UIS.InputBegan:Connect(function(Input)
     if Input.UserInputType == Enum.UserInputType.MouseButton2 then
@@ -587,17 +604,34 @@ local function toggleTriggerbot()
         triggerbotConnection = RunService.RenderStepped:Connect(function()
             if not triggerbotSettings.Enabled then return end
             
-            local closestPlayer = GetClosestPlayer()
-            if closestPlayer and closestPlayer.Character then
-                local targetPart = closestPlayer.Character:FindFirstChild(aimbotSettings.AimPart)
-                if targetPart and isPartVisible(targetPart) then
-                    if triggerbotSettings.TeamCheck and closestPlayer.Team == LocalPlayer.Team then return end
+            local closestPlayer = nil
+            local closestDistance = math.huge
+            
+            for _, player in pairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character then
+                    local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+                    local rootPart = player.Character:FindFirstChild("HumanoidRootPart")
                     
-                    mouse1press()
-                    wait(triggerbotSettings.HoldTime)
-                    mouse1release()
-                    wait(triggerbotSettings.Delay)
+                    if humanoid and humanoid.Health > 0 and rootPart then
+                        if triggerbotSettings.TeamCheck and player.Team == LocalPlayer.Team then continue end
+                        
+                        local targetPart = player.Character:FindFirstChild(aimbotSettings.AimPart)
+                        if targetPart and isPartVisible(targetPart) then
+                            local distance = (rootPart.Position - Camera.CFrame.Position).Magnitude
+                            if distance < closestDistance then
+                                closestDistance = distance
+                                closestPlayer = player
+                            end
+                        end
+                    end
                 end
+            end
+            
+            if closestPlayer then
+                mouse1press()
+                wait(triggerbotSettings.HoldTime)
+                mouse1release()
+                wait(triggerbotSettings.Delay)
             end
         end)
     else
@@ -818,25 +852,47 @@ local function toggleGravity()
     end
 end
 
--- Right-click settings menu
-local function createSettingsMenu(parentFrame, settingsTable, settingName)
-    local settingsMenu = Instance.new("Frame")
-    settingsMenu.Name = settingName.."_Settings"
-    settingsMenu.Size = UDim2.new(0, 0, 0, 0)
-    settingsMenu.Position = UDim2.new(1, 0, 0, 0)
-    settingsMenu.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-    settingsMenu.BorderSizePixel = 0
-    settingsMenu.Visible = false
-    settingsMenu.Parent = parentFrame
+-- Settings Menu Creation
+local function createSettingsMenu(parentGui, settingsTable, settingName)
+    local settingsFrame = Instance.new("Frame")
+    settingsFrame.Name = settingName.."_Settings"
+    settingsFrame.Size = UDim2.new(0, 0, 0, 0)
+    settingsFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+    settingsFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+    settingsFrame.BorderSizePixel = 0
+    settingsFrame.ClipsDescendants = true
+    settingsFrame.Visible = false
+    settingsFrame.Parent = parentGui
+    
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, 0, 0, 40)
+    title.Position = UDim2.new(0, 0, 0, 0)
+    title.Text = settingName.." Settings"
+    title.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+    title.TextColor3 = Color3.new(1, 1, 1)
+    title.TextSize = 18
+    title.Font = Enum.Font.SourceSansBold
+    title.Parent = settingsFrame
+    
+    local closeButton = Instance.new("TextButton")
+    closeButton.Size = UDim2.new(0, 30, 0, 30)
+    closeButton.Position = UDim2.new(1, -35, 0, 5)
+    closeButton.Text = "X"
+    closeButton.TextColor3 = Color3.new(1, 1, 1)
+    closeButton.TextSize = 18
+    closeButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+    closeButton.Parent = settingsFrame
     
     local scrollFrame = Instance.new("ScrollingFrame")
-    scrollFrame.Size = UDim2.new(1, 0, 1, 0)
+    scrollFrame.Size = UDim2.new(1, 0, 1, -50)
+    scrollFrame.Position = UDim2.new(0, 0, 0, 40)
+    scrollFrame.BackgroundTransparency = 1
     scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-    scrollFrame.ScrollBarThickness = 5
-    scrollFrame.Parent = settingsMenu
+    scrollFrame.ScrollBarThickness = 8
+    scrollFrame.Parent = settingsFrame
     
-    local yOffset = 5
-    local elementHeight = 30 -- Increased height for better visibility
+    local yOffset = 10
+    local elementHeight = 30
     
     for setting, value in pairs(settingsTable) do
         if type(value) == "boolean" then
@@ -845,7 +901,7 @@ local function createSettingsMenu(parentFrame, settingsTable, settingName)
             toggle.Position = UDim2.new(0.05, 0, 0, yOffset)
             toggle.Text = setting..": "..(value and "ON" or "OFF")
             toggle.TextColor3 = Color3.new(1, 1, 1)
-            toggle.TextSize = 14 -- Larger text
+            toggle.TextSize = 14
             toggle.BackgroundColor3 = value and Color3.fromRGB(50, 150, 50) or Color3.fromRGB(150, 50, 50)
             toggle.Parent = scrollFrame
             
@@ -858,11 +914,9 @@ local function createSettingsMenu(parentFrame, settingsTable, settingName)
                 -- Special cases
                 if setting == "Enabled" and settingName == "Aimbot" then
                     FOVCircle.Visible = settingsTable[setting] and aimbotSettings.FOVVisible
-                end
-                if setting == "FOVVisible" then
+                elseif setting == "FOVVisible" then
                     FOVCircle.Visible = settingsTable[setting] and aimbotSettings.Enabled
-                end
-                if settingName == "ESP" then
+                elseif settingName == "ESP" then
                     updateESP()
                 end
             end)
@@ -874,7 +928,7 @@ local function createSettingsMenu(parentFrame, settingsTable, settingName)
             label.Position = UDim2.new(0.05, 0, 0, yOffset)
             label.Text = setting..": "..value
             label.TextColor3 = Color3.new(1, 1, 1)
-            label.TextSize = 14 -- Larger text
+            label.TextSize = 14
             label.BackgroundTransparency = 1
             label.Parent = scrollFrame
             yOffset = yOffset + elementHeight
@@ -884,7 +938,7 @@ local function createSettingsMenu(parentFrame, settingsTable, settingName)
             increase.Position = UDim2.new(0.05, 0, 0, yOffset)
             increase.Text = "+"
             increase.TextColor3 = Color3.new(1, 1, 1)
-            increase.TextSize = 14 -- Larger text
+            increase.TextSize = 14
             increase.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
             increase.Parent = scrollFrame
             
@@ -893,7 +947,7 @@ local function createSettingsMenu(parentFrame, settingsTable, settingName)
             decrease.Position = UDim2.new(0.525, 0, 0, yOffset)
             decrease.Text = "-"
             decrease.TextColor3 = Color3.new(1, 1, 1)
-            decrease.TextSize = 14 -- Larger text
+            decrease.TextSize = 14
             decrease.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
             decrease.Parent = scrollFrame
             
@@ -903,14 +957,11 @@ local function createSettingsMenu(parentFrame, settingsTable, settingName)
                 label.Text = setting..": "..settingsTable[setting]
                 if setting == "FOV" then
                     FOVCircle.Radius = settingsTable[setting]
-                end
-                if setting == "flySpeed" then
+                elseif setting == "flySpeed" then
                     flySpeed = settingsTable[setting]
-                end
-                if setting == "walkSpeed" then
+                elseif setting == "walkSpeed" then
                     setSpeed(settingsTable[setting])
-                end
-                if setting == "fovValue" then
+                elseif setting == "fovValue" then
                     if fovChangerEnabled then
                         Camera.FieldOfView = settingsTable[setting]
                     end
@@ -923,14 +974,11 @@ local function createSettingsMenu(parentFrame, settingsTable, settingName)
                 label.Text = setting..": "..settingsTable[setting]
                 if setting == "FOV" then
                     FOVCircle.Radius = settingsTable[setting]
-                end
-                if setting == "flySpeed" then
+                elseif setting == "flySpeed" then
                     flySpeed = settingsTable[setting]
-                end
-                if setting == "walkSpeed" then
+                elseif setting == "walkSpeed" then
                     setSpeed(settingsTable[setting])
-                end
-                if setting == "fovValue" then
+                elseif setting == "fovValue" then
                     if fovChangerEnabled then
                         Camera.FieldOfView = settingsTable[setting]
                     end
@@ -944,7 +992,7 @@ local function createSettingsMenu(parentFrame, settingsTable, settingName)
             label.Position = UDim2.new(0.05, 0, 0, yOffset)
             label.Text = setting..": "..value
             label.TextColor3 = Color3.new(1, 1, 1)
-            label.TextSize = 14 -- Larger text
+            label.TextSize = 14
             label.BackgroundTransparency = 1
             label.Parent = scrollFrame
             yOffset = yOffset + elementHeight
@@ -954,7 +1002,7 @@ local function createSettingsMenu(parentFrame, settingsTable, settingName)
             nextButton.Position = UDim2.new(0.05, 0, 0, yOffset)
             nextButton.Text = "Next"
             nextButton.TextColor3 = Color3.new(1, 1, 1)
-            nextButton.TextSize = 14 -- Larger text
+            nextButton.TextSize = 14
             nextButton.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
             nextButton.Parent = scrollFrame
             
@@ -963,7 +1011,7 @@ local function createSettingsMenu(parentFrame, settingsTable, settingName)
             prevButton.Position = UDim2.new(0.525, 0, 0, yOffset)
             prevButton.Text = "Prev"
             prevButton.TextColor3 = Color3.new(1, 1, 1)
-            prevButton.TextSize = 14 -- Larger text
+            prevButton.TextSize = 14
             prevButton.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
             prevButton.Parent = scrollFrame
             
@@ -992,67 +1040,20 @@ local function createSettingsMenu(parentFrame, settingsTable, settingName)
     
     scrollFrame.CanvasSize = UDim2.new(0, 0, 0, yOffset)
     
-    return settingsMenu
+    closeButton.MouseButton1Click:Connect(function()
+        animateButtonClick(closeButton)
+        animateSettingsClose(settingsFrame, function()
+            settingsFrame:Destroy()
+            toggleMenu() -- Reopen main menu
+        end)
+    end)
+    
+    return settingsFrame
 end
 
 -- GUI Creation
 local CheatMenuGUI = nil
 local MenuOpen = false
-
-local function setupResizableGUI(frame)
-    local resizeHandle = Instance.new("Frame")
-    resizeHandle.Name = "ResizeHandle"
-    resizeHandle.Size = UDim2.new(1, 0, 0, 10)
-    resizeHandle.Position = UDim2.new(0, 0, 1, -10)
-    resizeHandle.BackgroundColor3 = Color3.fromRGB(80, 80, 90)
-    resizeHandle.BorderSizePixel = 0
-    resizeHandle.ZIndex = 10
-    resizeHandle.Parent = frame
-    
-    local resizeIcon = Instance.new("TextLabel")
-    resizeIcon.Text = "⤧" -- Resize icon
-    resizeIcon.Size = UDim2.new(0, 20, 0, 10)
-    resizeIcon.Position = UDim2.new(1, -20, 0, 0)
-    resizeIcon.TextColor3 = Color3.new(1, 1, 1)
-    resizeIcon.BackgroundTransparency = 1
-    resizeIcon.ZIndex = 11
-    resizeIcon.Parent = resizeHandle
-    
-    resizeHandle.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            isResizing = true
-            resizeStartPosition = input.Position
-            resizeStartSize = frame.Size
-        end
-    end)
-    
-    resizeHandle.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            isResizing = false
-        end
-    end)
-    
-    UIS.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement and isResizing then
-            local delta = input.Position - resizeStartPosition
-            local newSize = UDim2.new(
-                resizeStartSize.X.Scale, 
-                math.max(minSize.X, resizeStartSize.X.Offset + delta.X),
-                resizeStartSize.Y.Scale, 
-                math.max(minSize.Y, resizeStartSize.Y.Offset + delta.Y)
-            )
-            
-            frame.Size = newSize
-            frame.Position = UDim2.new(0.5, -newSize.X.Offset/2, 0.5, -newSize.Y.Offset/2)
-            
-            -- Adjust scrolling frame canvas size
-            local scrollingFrame = frame:FindFirstChildWhichIsA("ScrollingFrame")
-            if scrollingFrame then
-                scrollingFrame.CanvasSize = UDim2.new(0, 0, 0, scrollingFrame.AbsoluteContentSize.Y + 20)
-            end
-        end
-    end)
-end
 
 local function toggleMenu()
     MenuOpen = not MenuOpen
@@ -1071,28 +1072,25 @@ local function toggleMenu()
         Frame.Parent = CheatMenuGUI
 
         local Title = Instance.new("TextLabel")
-        Title.Size = UDim2.new(1, 0, 0, 40) -- Taller title bar
+        Title.Size = UDim2.new(1, 0, 0, 40)
         Title.Position = UDim2.new(0, 0, 0, 0)
         Title.Text = "Ultimate Cheat Menu - "..currentGame
         Title.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
         Title.TextColor3 = Color3.new(1, 1, 1)
-        Title.TextSize = 18 -- Larger title text
+        Title.TextSize = 18
         Title.Font = Enum.Font.SourceSansBold
         Title.Parent = Frame
 
         local ScrollingFrame = Instance.new("ScrollingFrame")
-        ScrollingFrame.Size = UDim2.new(1, 0, 1, -50) -- Adjusted for taller title
-        ScrollingFrame.Position = UDim2.new(0, 0, 0, 40) -- Adjusted for taller title
+        ScrollingFrame.Size = UDim2.new(1, 0, 1, -50)
+        ScrollingFrame.Position = UDim2.new(0, 0, 0, 40)
         ScrollingFrame.BackgroundTransparency = 1
-        ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 1200) -- Larger canvas
-        ScrollingFrame.ScrollBarThickness = 8 -- Thicker scrollbar
+        ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 1200)
+        ScrollingFrame.ScrollBarThickness = 8
         ScrollingFrame.Parent = Frame
 
-        -- Setup resizable GUI
-        setupResizableGUI(Frame)
-
         local yOffset = 10
-        local buttonHeight = 40 -- Taller buttons
+        local buttonHeight = 40
 
         local function createButton(text, toggleFunc, getStateFunc, settingsTable)
             local button = Instance.new("TextButton")
@@ -1100,14 +1098,9 @@ local function toggleMenu()
             button.Position = UDim2.new(0.05, 0, 0, yOffset)
             button.Text = text..": "..(getStateFunc() and "ON" or "OFF")
             button.TextColor3 = Color3.new(1, 1, 1)
-            button.TextSize = 16 -- Larger button text
+            button.TextSize = 16
             button.BackgroundColor3 = getStateFunc() and Color3.fromRGB(50, 150, 50) or Color3.fromRGB(150, 50, 50)
             button.Parent = ScrollingFrame
-            
-            local settingsMenu = nil
-            if settingsTable then
-                settingsMenu = createSettingsMenu(button, settingsTable, text)
-            end
             
             button.MouseButton1Click:Connect(function()
                 animateButtonClick(button)
@@ -1116,17 +1109,17 @@ local function toggleMenu()
                 button.BackgroundColor3 = getStateFunc() and Color3.fromRGB(50, 150, 50) or Color3.fromRGB(150, 50, 50)
             end)
             
-            button.MouseButton2Click:Connect(function()
-                if settingsMenu then
-                    if settingsMenu.Visible then
-                        animateSettingsClose(settingsMenu)
-                    else
-                        animateSettingsOpen(settingsMenu)
-                    end
-                end
-            end)
+            if settingsTable then
+                button.MouseButton2Click:Connect(function()
+                    animateButtonClick(button)
+                    animateMenuClose(Frame, function()
+                        local settingsFrame = createSettingsMenu(CheatMenuGUI, settingsTable, text)
+                        animateSettingsOpen(settingsFrame)
+                    end)
+                end)
+            end
             
-            yOffset = yOffset + buttonHeight + 5 -- More spacing between buttons
+            yOffset = yOffset + buttonHeight + 5
             return button
         end
 
@@ -1135,7 +1128,7 @@ local function toggleMenu()
         createButton("Noclip", toggleNoclip, function() return noclip end)
         createButton("Speed Hack", function() setSpeed(walkSpeed == 16 and 50 or 16) end, function() return walkSpeed > 16 end, {walkSpeed = walkSpeed})
         createButton("ESP", toggleESP, function() return espEnabled end, espSettings)
-        createButton("Aimbot", function() aimbotSettings.Enabled = not aimbotSettings.Enabled end, function() return aimbotSettings.Enabled end, aimbotSettings)
+        createButton("Aimbot", toggleAimbot, function() return aimbotSettings.Enabled end, aimbotSettings)
         createButton("Triggerbot", toggleTriggerbot, function() return triggerbotSettings.Enabled end, triggerbotSettings)
         createButton("Silent Aim", function() silentAim = not silentAim end, function() return silentAim end, silentAimSettings)
         createButton("Infinite Jump", toggleInfiniteJump, function() return infiniteJump end)
@@ -1159,11 +1152,11 @@ local function toggleMenu()
 
         -- Close button
         local CloseButton = Instance.new("TextButton")
-        CloseButton.Size = UDim2.new(0.9, 0, 0, 40) -- Taller close button
+        CloseButton.Size = UDim2.new(0.9, 0, 0, 40)
         CloseButton.Position = UDim2.new(0.05, 0, 0, yOffset)
         CloseButton.Text = "Close Menu"
         CloseButton.TextColor3 = Color3.new(1, 1, 1)
-        CloseButton.TextSize = 16 -- Larger text
+        CloseButton.TextSize = 16
         CloseButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
         CloseButton.Parent = ScrollingFrame
 
