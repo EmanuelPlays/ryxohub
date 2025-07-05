@@ -130,6 +130,12 @@ local fpsBoostSettings = {
     TextureQuality = 1
 }
 
+-- Resizing variables
+local isResizing = false
+local resizeStartPosition = nil
+local resizeStartSize = nil
+local minSize = Vector2.new(300, 400) -- Minimum size for the GUI
+
 -- Aimbot Settings
 local aimbotSettings = {
     Enabled = true,
@@ -993,6 +999,61 @@ end
 local CheatMenuGUI = nil
 local MenuOpen = false
 
+local function setupResizableGUI(frame)
+    local resizeHandle = Instance.new("Frame")
+    resizeHandle.Name = "ResizeHandle"
+    resizeHandle.Size = UDim2.new(1, 0, 0, 10)
+    resizeHandle.Position = UDim2.new(0, 0, 1, -10)
+    resizeHandle.BackgroundColor3 = Color3.fromRGB(80, 80, 90)
+    resizeHandle.BorderSizePixel = 0
+    resizeHandle.ZIndex = 10
+    resizeHandle.Parent = frame
+    
+    local resizeIcon = Instance.new("TextLabel")
+    resizeIcon.Text = "⤧" -- Resize icon
+    resizeIcon.Size = UDim2.new(0, 20, 0, 10)
+    resizeIcon.Position = UDim2.new(1, -20, 0, 0)
+    resizeIcon.TextColor3 = Color3.new(1, 1, 1)
+    resizeIcon.BackgroundTransparency = 1
+    resizeIcon.ZIndex = 11
+    resizeIcon.Parent = resizeHandle
+    
+    resizeHandle.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            isResizing = true
+            resizeStartPosition = input.Position
+            resizeStartSize = frame.Size
+        end
+    end)
+    
+    resizeHandle.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            isResizing = false
+        end
+    end)
+    
+    UIS.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement and isResizing then
+            local delta = input.Position - resizeStartPosition
+            local newSize = UDim2.new(
+                resizeStartSize.X.Scale, 
+                math.max(minSize.X, resizeStartSize.X.Offset + delta.X),
+                resizeStartSize.Y.Scale, 
+                math.max(minSize.Y, resizeStartSize.Y.Offset + delta.Y)
+            )
+            
+            frame.Size = newSize
+            frame.Position = UDim2.new(0.5, -newSize.X.Offset/2, 0.5, -newSize.Y.Offset/2)
+            
+            -- Adjust scrolling frame canvas size
+            local scrollingFrame = frame:FindFirstChildWhichIsA("ScrollingFrame")
+            if scrollingFrame then
+                scrollingFrame.CanvasSize = UDim2.new(0, 0, 0, scrollingFrame.AbsoluteContentSize.Y + 20)
+            end
+        end
+    end)
+end
+
 local function toggleMenu()
     MenuOpen = not MenuOpen
     
@@ -1026,6 +1087,9 @@ local function toggleMenu()
         ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 1200) -- Larger canvas
         ScrollingFrame.ScrollBarThickness = 8 -- Thicker scrollbar
         ScrollingFrame.Parent = Frame
+
+        -- Setup resizable GUI
+        setupResizableGUI(Frame)
 
         local yOffset = 10
         local buttonHeight = 40 -- Taller buttons
