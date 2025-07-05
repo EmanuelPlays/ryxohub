@@ -1,4 +1,4 @@
--- Ultimate Roblox Cheat Script with All Features
+-- Ryxohub made by EmanuelPlays, all the -- are made by me for developement purposes
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
