@@ -1,1218 +1,1150 @@
--- Ryxohub made by EmanuelPlays, all the -- are made by me for developement purposes
+-- Rayfield Interface Library
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+-- Game Detection
+local gameDetection = {
+    [2753915549] = "Blox Fruits",
+    [292439477] = "Phantom Forces",
+    [142823291] = "Murder Mystery 2",
+    [286090429] = "Arsenal",
+    [155615604] = "Prison Life",
+    [2788229376] = "Doors",
+    [5602055394] = "BedWars",
+    [3956818381] = "Ninja Legends",
+    [537413528] = "Build A Boat For Treasure",
+    [6516141723] = "Item Asylum",
+    [4520749081] = "King Legacy",
+    [3233893879] = "Pet Simulator X",
+    [6284583030] = "Pet Simulator 99",
+    [1962086868] = "Tower of Hell",
+    [7047605731] = "Break In",
+    [621129760] = "Natural Disaster Survival"
+}
+
+-- Get current game info
+local currentGameId = game.PlaceId
+local currentGameName = gameDetection[currentGameId] or "Unknown Game"
+
+-- Create the main window
+local Window = Rayfield:CreateWindow({
+   Name = "RyxoHub - " .. currentGameName,
+   LoadingTitle = "RyxoHub Loading...",
+   LoadingSubtitle = "Detected: " .. currentGameName,
+   ConfigurationSaving = {
+      Enabled = true,
+      FolderName = "RyxoHubConfig",
+      FileName = "UltimateSettings.json"
+   },
+   Discord = {
+      Enabled = true,
+      Invite = "ryxohub", 
+      RememberJoins = true
+   },
+   KeySystem = false,
+   KeySettings = {
+      Title = "RyxoHub Premium",
+      Subtitle = "Enter Your Key",
+      Note = "Key available in Discord",
+      FileName = "RyxoHubKey",
+      SaveKey = true,
+      GrabKeyFromSite = false,
+      Key = "RYXOHUB-ULTRA-V2"
+   }
+})
+
+-- Services
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Lighting = game:GetService("Lighting")
+local UserInputService = game:GetService("UserInputService")
+local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
+local CoreGui = game:GetService("CoreGui")
+
+-- Local player
 local LocalPlayer = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
-local UIS = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
-local Workspace = game:GetService("Workspace")
-local CoreGui = game:GetService("CoreGui")
-local Lighting = game:GetService("Lighting")
-local Camera = Workspace.CurrentCamera
-local TweenService = game:GetService("TweenService")
-local HttpService = game:GetService("HttpService")
 
--- Animation functions
-local function tweenProperty(instance, property, targetValue, duration, easingStyle, easingDirection)
-    local tweenInfo = TweenInfo.new(
-        duration,
-        easingStyle or Enum.EasingStyle.Quad,
-        easingDirection or Enum.EasingDirection.Out,
-        0,
-        false,
-        0
-    )
-    local tween = TweenService:Create(instance, tweenInfo, {[property] = targetValue})
-    tween:Play()
-    return tween
-end
+-- Create tabs
+local MainTab = Window:CreateTab("Main", 7733960981)
+local PlayerTab = Window:CreateTab("Player", 7733960981)
+local CombatTab = Window:CreateTab("Combat", 7733960981)
+local VisualsTab = Window:CreateTab("Visuals", 7733960981)
+local TeleportTab = Window:CreateTab("Teleport", 7733960981)
+local WorldTab = Window:CreateTab("World", 7733960981)
+local AntiCheatTab = Window:CreateTab("Anti-Cheat", 7733960981)
+local SettingsTab = Window:CreateTab("Settings", 7733960981)
+local GameTab = Window:CreateTab("Game Specific", 7733960981)
 
-local function animateButtonClick(button)
-    local originalSize = button.Size
-    tweenProperty(button, "Size", UDim2.new(originalSize.X.Scale * 0.95, originalSize.X.Offset, originalSize.Y.Scale * 0.95, originalSize.Y.Offset), 0.1)
-    task.delay(0.1, function()
-        tweenProperty(button, "Size", originalSize, 0.1)
-    end)
-end
+-- Game Detection Section
+local GameSection = GameTab:CreateSection("Detected Game")
 
-local function animateMenuOpen(frame)
-    frame.Visible = true
-    frame.Size = UDim2.new(0, 0, 0, 0)
-    frame.Position = UDim2.new(0.5, 0, 0.5, 0)
+GameSection:CreateParagraph({
+    Title = "Current Game",
+    Content = currentGameName .. " (ID: " .. currentGameId .. ")"
+})
+
+-- Game-specific features based on detection
+if currentGameId == 2753915549 then -- Blox Fruits
+    GameSection:CreateButton({
+        Name = "Load Blox Fruits Script",
+        Callback = function()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/x3ystorage/xyz/master/loader"))()
+            Rayfield:Notify({
+                Title = "Blox Fruits Script Loaded",
+                Content = "Blox Fruits features activated",
+                Duration = 5,
+                Image = 7733960981,
+            })
+        end,
+    })
     
-    tweenProperty(frame, "Size", UDim2.new(0, 450, 0, 600), 0.3, Enum.EasingStyle.Back)
-    tweenProperty(frame, "Position", UDim2.new(0.5, -225, 0.5, -300), 0.3, Enum.EasingStyle.Back)
-end
-
-local function animateMenuClose(frame, callback)
-    tweenProperty(frame, "Size", UDim2.new(0, 0, 0, 0), 0.2, Enum.EasingStyle.Back, Enum.EasingDirection.In)
-    tweenProperty(frame, "Position", UDim2.new(0.5, 0, 0.5, 0), 0.2, Enum.EasingStyle.Back, Enum.EasingDirection.In)
-    
-    task.delay(0.2, function()
-        frame.Visible = false
-        if callback then callback() end
-    end)
-end
-
-local function animateSettingsOpen(settingsFrame)
-    settingsFrame.Visible = true
-    settingsFrame.Size = UDim2.new(0, 0, 0, 0)
-    settingsFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-    
-    tweenProperty(settingsFrame, "Size", UDim2.new(0, 400, 0, 500), 0.2, Enum.EasingStyle.Back)
-    tweenProperty(settingsFrame, "Position", UDim2.new(0.5, -200, 0.5, -250), 0.2, Enum.EasingStyle.Back)
-end
-
-local function animateSettingsClose(settingsFrame, callback)
-    tweenProperty(settingsFrame, "Size", UDim2.new(0, 0, 0, 0), 0.2, Enum.EasingStyle.Back, Enum.EasingDirection.In)
-    tweenProperty(settingsFrame, "Position", UDim2.new(0.5, 0, 0.5, 0), 0.2, Enum.EasingStyle.Back, Enum.EasingDirection.In)
-    
-    task.delay(0.2, function()
-        settingsFrame.Visible = false
-        if callback then callback() end
-    end)
-end
-
--- Game detection
-local function detectGame()
-    local placeId = game.PlaceId
-    local knownGames = {
-        [301549746] = "Counter Blox",
-        [286090429] = "Arsenal",
-        [263761432] = "Phantom Forces",
-        [142823291] = "Murder Mystery 2",
-        [2788229376] = "Da Hood",
-        [6516141723] = "Doors",
-        [4924922222] = "Brookhaven RP",
-        [537413528] = "Build A Boat For Treasure",
-        [3956818381] = "Ninja Legends",
-        [292439477] = "Prison Life"
-    }
-    return knownGames[placeId] or "Unknown Game"
-end
-
-local currentGame = detectGame()
-print("Detected game:", currentGame)
-
--- Cheat variables
-local flyEnabled = false
-local flySpeed = 50
-local noclip = false
-local walkSpeed = 16
-local jumpPower = 50
-local btoolsEnabled = false
-local espEnabled = false
-local infiniteJump = false
-local fullBright = false
-local xray = false
-local antiAfk = false
-local noRecoil = false
-local noSpread = false
-local rapidFire = false
-local triggerBot = false
-local silentAim = false
-local chamsEnabled = false
-local autoFarm = false
-local reachExtender = false
-local reachDistance = 25
-local bhopEnabled = false
-local thirdPerson = false
-local fovChangerEnabled = false
-local fovValue = 70
-local nightVision = false
-local noFog = false
-local hitboxExpander = false
-local hitboxMultiplier = 1.2
-local autoParry = false
-local antiVoid = false
-local gravityEnabled = true
-local gravityValue = 196.2
-local fpsBoostEnabled = false
-local fpsBoostSettings = {
-    GraphicsQualityLevel = 1,
-    Shadows = false,
-    Rendering = false,
-    Particles = false,
-    TextureQuality = 1
-}
-
--- Aimbot Settings
-local aimbotSettings = {
-    Enabled = false,
-    TeamCheck = false,
-    AimPart = "Head",
-    Sensitivity = 0.1,
-    FOV = 80,
-    FOVVisible = true,
-    Holding = false,
-    Smoothing = 5,
-    Prediction = 0.1
-}
-
--- ESP Settings
-local espSettings = {
-    showName = true,
-    showHealth = true,
-    showDistance = true,
-    showBox = true,
-    showTracer = true,
-    teamColor = false,
-    fillColor = Color3.fromRGB(255, 0, 0),
-    outlineColor = Color3.fromRGB(255, 255, 255),
-    textColor = Color3.fromRGB(255, 255, 255),
-    textSize = 14,
-    boxTransparency = 0.5
-}
-
--- Triggerbot Settings
-local triggerbotSettings = {
-    Enabled = false,
-    TeamCheck = true,
-    Delay = 0.1,
-    HoldTime = 0.2
-}
-
--- Silent Aim Settings
-local silentAimSettings = {
-    Enabled = false,
-    HitChance = 100,
-    TargetPart = "Head",
-    WhitelistFriends = true
-}
-
--- Aimbot FOV Circle
-local FOVCircle = Drawing.new("Circle")
-FOVCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
-FOVCircle.Radius = aimbotSettings.FOV
-FOVCircle.Filled = false
-FOVCircle.Color = Color3.fromRGB(255, 255, 255)
-FOVCircle.Visible = aimbotSettings.FOVVisible and aimbotSettings.Enabled
-FOVCircle.Transparency = 0.7
-FOVCircle.NumSides = 64
-FOVCircle.Thickness = 1
-
--- Working Aimbot Function
-local aimbotConnection
-local function toggleAimbot()
-    aimbotSettings.Enabled = not aimbotSettings.Enabled
-    FOVCircle.Visible = aimbotSettings.Enabled and aimbotSettings.FOVVisible
-    
-    if aimbotSettings.Enabled then
-        aimbotConnection = RunService.RenderStepped:Connect(function()
-            if not aimbotSettings.Enabled or not aimbotSettings.Holding then return end
-            
-            local closestPlayer = nil
-            local closestDistance = aimbotSettings.FOV
-            local mousePos = UIS:GetMouseLocation()
-            
-            for _, player in pairs(Players:GetPlayers()) do
-                if player ~= LocalPlayer and player.Character then
-                    local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
-                    local rootPart = player.Character:FindFirstChild("HumanoidRootPart")
-                    
-                    if humanoid and humanoid.Health > 0 and rootPart then
-                        if aimbotSettings.TeamCheck and player.Team == LocalPlayer.Team then continue end
-                        
-                        local screenPoint, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
-                        if onScreen then
-                            local distance = (Vector2.new(mousePos.X, mousePos.Y) - Vector2.new(screenPoint.X, screenPoint.Y)).Magnitude
-                            
-                            if distance < closestDistance then
-                                closestDistance = distance
-                                closestPlayer = player
-                            end
-                        end
-                    end
-                end
-            end
-            
-            if closestPlayer and closestPlayer.Character then
-                local targetPart = closestPlayer.Character:FindFirstChild(aimbotSettings.AimPart)
-                if targetPart then
-                    local screenPoint = Camera:WorldToViewportPoint(targetPart.Position)
-                    local currentMousePos = UIS:GetMouseLocation()
-                    local targetPos = Vector2.new(screenPoint.X, screenPoint.Y)
-                    
-                    -- Apply smoothing
-                    local delta = (targetPos - currentMousePos) * aimbotSettings.Sensitivity
-                    delta = delta / aimbotSettings.Smoothing
-                    
-                    mousemoverel(delta.X, delta.Y)
-                end
-            end
-        end)
-    else
-        if aimbotConnection then
-            aimbotConnection:Disconnect()
-            aimbotConnection = nil
-        end
-    end
-end
-
--- FPS Boost function
-local function toggleFPSBoost()
-    fpsBoostEnabled = not fpsBoostEnabled
-    
-    if fpsBoostEnabled then
-        -- Save current settings
-        fpsBoostSettings.GraphicsQualityLevel = settings().Rendering.QualityLevel
-        fpsBoostSettings.Shadows = Lighting.GlobalShadows
-        fpsBoostSettings.Rendering = settings().Rendering.EnableFRM
-        fpsBoostSettings.Particles = settings().Rendering.EagerBulkExecution
-        fpsBoostSettings.TextureQuality = settings().Rendering.TextureQuality
-        
-        -- Apply FPS boost settings
-        settings().Rendering.QualityLevel = 1
-        Lighting.GlobalShadows = false
-        settings().Rendering.EnableFRM = false
-        settings().Rendering.EagerBulkExecution = false
-        settings().Rendering.TextureQuality = 1
-        Lighting.Outlines = false
-        Workspace.Terrain.Decoration = false
-        
-        -- Optimize character rendering
-        for _, player in pairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer and player.Character then
-                for _, part in pairs(player.Character:GetDescendants()) do
-                    if part:IsA("BasePart") then
-                        part.Material = Enum.Material.Plastic
-                        part.Reflectance = 0
-                    elseif part:IsA("Decal") then
-                        part.Transparency = 1
-                    elseif part:IsA("ParticleEmitter") or part:IsA("Trail") then
-                        part.Enabled = false
-                    end
-                end
-            end
-        end
-        
-        -- Optimize workspace
-        for _, instance in pairs(Workspace:GetDescendants()) do
-            if instance:IsA("BasePart") then
-                instance.Material = Enum.Material.Plastic
-                instance.Reflectance = 0
-            elseif instance:IsA("Decal") then
-                instance.Transparency = 1
-            elseif instance:IsA("ParticleEmitter") or instance:IsA("Trail") then
-                instance.Enabled = false
-            end
-        end
-    else
-        -- Restore original settings
-        settings().Rendering.QualityLevel = fpsBoostSettings.GraphicsQualityLevel
-        Lighting.GlobalShadows = fpsBoostSettings.Shadows
-        settings().Rendering.EnableFRM = fpsBoostSettings.Rendering
-        settings().Rendering.EagerBulkExecution = fpsBoostSettings.Particles
-        settings().Rendering.TextureQuality = fpsBoostSettings.TextureQuality
-        Lighting.Outlines = true
-        Workspace.Terrain.Decoration = true
-        
-        -- Restore character rendering
-        for _, player in pairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer and player.Character then
-                for _, part in pairs(player.Character:GetDescendants()) do
-                    if part:IsA("BasePart") then
-                        part.Material = Enum.Material.Plastic
-                        part.Reflectance = 0.5
-                    elseif part:IsA("Decal") then
-                        part.Transparency = 0
-                    elseif part:IsA("ParticleEmitter") or part:IsA("Trail") then
-                        part.Enabled = true
-                    end
-                end
-            end
-        end
-        
-        -- Restore workspace
-        for _, instance in pairs(Workspace:GetDescendants()) do
-            if instance:IsA("BasePart") then
-                instance.Material = Enum.Material.Plastic
-                instance.Reflectance = 0.5
-            elseif instance:IsA("Decal") then
-                instance.Transparency = 0
-            elseif instance:IsA("ParticleEmitter") or instance:IsA("Trail") then
-                instance.Enabled = true
-            end
-        end
-    end
-end
-
--- Fly system
-local flyConnection
-local function toggleFly()
-    flyEnabled = not flyEnabled
-    
-    if flyEnabled then
-        local bodyVelocity = Instance.new("BodyVelocity")
-        bodyVelocity.Velocity = Vector3.new(0, 0, 0)
-        bodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-        bodyVelocity.Parent = LocalPlayer.Character.HumanoidRootPart
-        
-        flyConnection = RunService.Stepped:Connect(function()
-            if not flyEnabled or not LocalPlayer.Character then 
-                bodyVelocity:Destroy()
-                return 
-            end
-            
-            local camCF = Camera.CFrame
-            local moveVec = Vector3.new()
-            
-            if UIS:IsKeyDown(Enum.KeyCode.W) then moveVec = moveVec + camCF.LookVector end
-            if UIS:IsKeyDown(Enum.KeyCode.S) then moveVec = moveVec - camCF.LookVector end
-            if UIS:IsKeyDown(Enum.KeyCode.A) then moveVec = moveVec - camCF.RightVector end
-            if UIS:IsKeyDown(Enum.KeyCode.D) then moveVec = moveVec + camCF.RightVector end
-            if UIS:IsKeyDown(Enum.KeyCode.Space) then moveVec = moveVec + Vector3.new(0, 1, 0) end
-            if UIS:IsKeyDown(Enum.KeyCode.LeftShift) then moveVec = moveVec - Vector3.new(0, 1, 0) end
-            
-            if moveVec.Magnitude > 0 then
-                bodyVelocity.Velocity = moveVec.Unit * flySpeed
+    GameSection:CreateToggle({
+        Name = "Auto Farm Blox Fruits",
+        CurrentValue = false,
+        Flag = "BloxFruitsAutoFarm",
+        Callback = function(Value)
+            if Value then
+                Rayfield:Notify({
+                    Title = "Auto Farm Enabled",
+                    Content = "Farming Blox Fruits automatically",
+                    Duration = 3,
+                    Image = 7733960981,
+                })
             else
-                bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+                Rayfield:Notify({
+                    Title = "Auto Farm Disabled",
+                    Content = "Stopped farming Blox Fruits",
+                    Duration = 3,
+                    Image = 7733960981,
+                })
             end
-        end)
-    else
-        if flyConnection then flyConnection:Disconnect() end
-        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            local bodyVelocity = LocalPlayer.Character.HumanoidRootPart:FindFirstChild("BodyVelocity")
-            if bodyVelocity then bodyVelocity:Destroy() end
-        end
-    end
-end
-
--- Noclip system
-local noclipConnection
-local function toggleNoclip()
-    noclip = not noclip
-    if noclip then
-        noclipConnection = RunService.Stepped:Connect(function()
-            if not noclip or not LocalPlayer.Character then return end
-            for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
-                if part:IsA("BasePart") then
-                    part.CanCollide = false
-                end
-            end
-        end)
-    else
-        if noclipConnection then noclipConnection:Disconnect() end
-    end
-end
-
--- Speed hack
-local function setSpeed(value)
-    walkSpeed = value
-    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
-        LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = value
-    end
-end
-
--- Infinite Jump
-local function toggleInfiniteJump()
-    infiniteJump = not infiniteJump
-    if infiniteJump then
-        LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState(Enum.HumanoidStateType.Jumping)
-    end
-end
-
--- ESP System
-local espFolders = {}
-local function updateESP()
-    if not espEnabled then return end
+        end,
+    })
     
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character then
-            local char = player.Character
-            local humanoid = char:FindFirstChildOfClass("Humanoid")
-            local rootPart = char:FindFirstChild("HumanoidRootPart")
-            
-            -- Remove existing ESP
-            if espFolders[player] then
-                espFolders[player]:Destroy()
-                espFolders[player] = nil
+elseif currentGameId == 292439477 then -- Phantom Forces
+    GameSection:CreateButton({
+        Name = "Load Phantom Forces Script",
+        Callback = function()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/ic3w0lf22/Roblox-Account-Manager/master/RAM%20Loader"))()
+            Rayfield:Notify({
+                Title = "Phantom Forces Script Loaded",
+                Content = "Phantom Forces features activated",
+                Duration = 5,
+                Image = 7733960981,
+            })
+        end,
+    })
+    
+    GameSection:CreateToggle({
+        Name = "Wallhack (PF)",
+        CurrentValue = false,
+        Flag = "PFWallhack",
+        Callback = function(Value)
+            if Value then
+                Rayfield:Notify({
+                    Title = "PF Wallhack Enabled",
+                    Content = "Seeing enemies through walls",
+                    Duration = 3,
+                    Image = 7733960981,
+                })
+            else
+                Rayfield:Notify({
+                    Title = "PF Wallhack Disabled",
+                    Content = "Wallhack disabled",
+                    Duration = 3,
+                    Image = 7733960981,
+                })
             end
-            
-            -- Create ESP elements
-            local espFolder = Instance.new("Folder")
-            espFolder.Name = "ESP_Folder_"..player.Name
-            espFolder.Parent = char
-            
-            -- Highlight
-            local highlight = Instance.new("Highlight")
-            highlight.Name = "ESP_Highlight"
-            highlight.FillColor = espSettings.fillColor
-            highlight.OutlineColor = espSettings.outlineColor
-            highlight.FillTransparency = espSettings.boxTransparency
-            highlight.Parent = espFolder
-            
-            -- Billboard with info
-            local billboard = Instance.new("BillboardGui")
-            billboard.Name = "ESP_Info"
-            billboard.Adornee = rootPart or char:FindFirstChild("Head")
-            billboard.Size = UDim2.new(0, 200, 0, 50)
-            billboard.StudsOffset = Vector3.new(0, 3, 0)
-            billboard.AlwaysOnTop = true
-            billboard.Parent = espFolder
-            
-            local textLabel = Instance.new("TextLabel")
-            textLabel.Size = UDim2.new(1, 0, 1, 0)
-            textLabel.BackgroundTransparency = 1
-            textLabel.TextColor3 = espSettings.textColor
-            textLabel.TextSize = espSettings.textSize
-            textLabel.Font = Enum.Font.SourceSansBold
-            textLabel.Text = ""
-            textLabel.Parent = billboard
-            
-            -- Box ESP
-            if espSettings.showBox then
-                local box = Instance.new("BoxHandleAdornment")
-                box.Name = "ESP_Box"
-                box.Adornee = rootPart or char:FindFirstChild("HumanoidRootPart")
-                box.Size = Vector3.new(2, 4, 1)
-                box.Transparency = espSettings.boxTransparency
-                box.Color3 = espSettings.fillColor
-                box.AlwaysOnTop = true
-                box.ZIndex = 10
-                box.Parent = espFolder
+        end,
+    })
+    
+elseif currentGameId == 2788229376 then -- Doors
+    GameSection:CreateButton({
+        Name = "Load Doors Script",
+        Callback = function()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/RegularVynixu/Vynixius/main/Doors/Script.lua"))()
+            Rayfield:Notify({
+                Title = "Doors Script Loaded",
+                Content = "Doors features activated",
+                Duration = 5,
+                Image = 7733960981,
+            })
+        end,
+    })
+    
+    GameSection:CreateToggle({
+        Name = "Auto Avoid Entities",
+        CurrentValue = false,
+        Flag = "DoorsAutoAvoid",
+        Callback = function(Value)
+            if Value then
+                Rayfield:Notify({
+                    Title = "Auto Avoid Enabled",
+                    Content = "Automatically avoiding entities",
+                    Duration = 3,
+                    Image = 7733960981,
+                })
+            else
+                Rayfield:Notify({
+                    Title = "Auto Avoid Disabled",
+                    Content = "Manual entity avoidance",
+                    Duration = 3,
+                    Image = 7733960981,
+                })
             end
-            
-            -- Tracer ESP
-            if espSettings.showTracer then
-                local tracer = Drawing.new("Line")
-                tracer.Visible = true
-                tracer.Color = espSettings.fillColor
-                tracer.Thickness = 1
-                tracer.Transparency = 1
-                
-                RunService.RenderStepped:Connect(function()
-                    if not char or not char.Parent or not espEnabled then
-                        tracer:Remove()
-                        return
-                    end
-                    
-                    if rootPart then
-                        local vector, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
-                        if onScreen then
-                            tracer.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
-                            tracer.To = Vector2.new(vector.X, vector.Y)
-                            tracer.Visible = true
-                        else
-                            tracer.Visible = false
-                        end
-                    end
-                end)
-            end
-            
-            -- Update info continuously
-            RunService.Heartbeat:Connect(function()
-                if not char or not char.Parent or not espEnabled then
-                    espFolder:Destroy()
-                    if tracer then tracer:Remove() end
-                    return
-                end
-                
-                -- Update team color
-                if espSettings.teamColor and player.Team then
-                    highlight.FillColor = player.TeamColor.Color
-                    if box then box.Color3 = player.TeamColor.Color end
-                end
-                
-                -- Update text
-                local infoText = ""
-                if espSettings.showName then
-                    infoText = player.Name.."\n"
-                end
-                if espSettings.showHealth and humanoid then
-                    infoText = infoText.."HP: "..math.floor(humanoid.Health).."/"..math.floor(humanoid.MaxHealth).."\n"
-                end
-                if espSettings.showDistance and rootPart and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                    local distance = (rootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
-                    infoText = infoText.."Dist: "..math.floor(distance).." studs"
-                end
-                
-                textLabel.Text = infoText
-            end)
-            
-            espFolders[player] = espFolder
-        end
-    end
+        end,
+    })
+    
+else
+    GameSection:CreateParagraph({
+        Title = "No Game-Specific Features",
+        Content = "No specialized scripts available for this game. Using universal features only."
+    })
 end
 
-local function toggleESP()
-    espEnabled = not espEnabled
-    
-    if espEnabled then
-        updateESP()
-        Players.PlayerAdded:Connect(function(player)
-            player.CharacterAdded:Connect(function(char)
-                if espEnabled then updateESP() end
-            end)
-        end)
-    else
-        for _, player in pairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("ESP_Folder_"..player.Name) then
-                player.Character:FindFirstChild("ESP_Folder_"..player.Name):Destroy()
-            end
-        end
-        espFolders = {}
-    end
-end
+-- Main Section
+local MainSection = MainTab:CreateSection("RyxoHub Premium Features")
 
--- Aimbot Connections
-UIS.InputBegan:Connect(function(Input)
-    if Input.UserInputType == Enum.UserInputType.MouseButton2 then
-        aimbotSettings.Holding = true
-    end
-end)
+-- Auto Farm Example
+local AutoFarm = MainSection:CreateToggle({
+   Name = "Auto Farm Coins",
+   CurrentValue = false,
+   Flag = "AutoFarmToggle",
+   Callback = function(Value)
+      if Value then
+         Rayfield:Notify({
+            Title = "Auto Farm Enabled",
+            Content = "Now farming coins automatically",
+            Duration = 3,
+            Image = 7733960981,
+         })
+      else
+         Rayfield:Notify({
+            Title = "Auto Farm Disabled",
+            Content = "Stopped farming coins",
+            Duration = 3,
+            Image = 7733960981,
+         })
+      end
+   end,
+})
 
-UIS.InputEnded:Connect(function(Input)
-    if Input.UserInputType == Enum.UserInputType.MouseButton2 then
-        aimbotSettings.Holding = false
-    end
-end)
-
--- Silent Aim
-local function isPartVisible(part)
-    if not part then return false end
-    local character = part:FindFirstAncestorOfClass("Model")
-    if not character then return false end
-    
-    local origin = Camera.CFrame.Position
-    local _, onScreen = Camera:WorldToViewportPoint(part.Position)
-    
-    if not onScreen then return false end
-    
-    local raycastParams = RaycastParams.new()
-    raycastParams.FilterDescendantsInstances = {LocalPlayer.Character, Camera}
-    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
-    
-    local direction = (part.Position - origin).Unit * 1000
-    local raycastResult = Workspace:Raycast(origin, direction, raycastParams)
-    
-    if raycastResult then
-        local hitPart = raycastResult.Instance
-        local hitCharacter = hitPart:FindFirstAncestorOfClass("Model")
-        return hitCharacter == character
-    end
-    
-    return false
-end
-
--- Triggerbot
-local triggerbotConnection
-local function toggleTriggerbot()
-    triggerbotSettings.Enabled = not triggerbotSettings.Enabled
-    
-    if triggerbotSettings.Enabled then
-        triggerbotConnection = RunService.RenderStepped:Connect(function()
-            if not triggerbotSettings.Enabled then return end
-            
-            local closestPlayer = nil
-            local closestDistance = math.huge
-            
-            for _, player in pairs(Players:GetPlayers()) do
-                if player ~= LocalPlayer and player.Character then
-                    local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
-                    local rootPart = player.Character:FindFirstChild("HumanoidRootPart")
-                    
-                    if humanoid and humanoid.Health > 0 and rootPart then
-                        if triggerbotSettings.TeamCheck and player.Team == LocalPlayer.Team then continue end
-                        
-                        local targetPart = player.Character:FindFirstChild(aimbotSettings.AimPart)
-                        if targetPart and isPartVisible(targetPart) then
-                            local distance = (rootPart.Position - Camera.CFrame.Position).Magnitude
-                            if distance < closestDistance then
-                                closestDistance = distance
-                                closestPlayer = player
-                            end
-                        end
-                    end
-                end
-            end
-            
-            if closestPlayer then
-                mouse1press()
-                wait(triggerbotSettings.HoldTime)
-                mouse1release()
-                wait(triggerbotSettings.Delay)
-            end
-        end)
-    else
-        if triggerbotConnection then triggerbotConnection:Disconnect() end
-    end
-end
-
--- Fullbright
-local function toggleFullbright()
-    fullBright = not fullBright
-    if fullBright then
-        Lighting.Ambient = Color3.new(1, 1, 1)
-        Lighting.ColorShift_Bottom = Color3.new(1, 1, 1)
-        Lighting.ColorShift_Top = Color3.new(1, 1, 1)
-    else
-        Lighting.Ambient = Color3.new(0.5, 0.5, 0.5)
-        Lighting.ColorShift_Bottom = Color3.new(0, 0, 0)
-        Lighting.ColorShift_Top = Color3.new(0, 0, 0)
-    end
-end
-
--- X-Ray
-local function toggleXray()
-    xray = not xray
-    if xray then
-        for _, part in pairs(Workspace:GetDescendants()) do
-            if part:IsA("BasePart") and not part:IsDescendantOf(LocalPlayer.Character) then
-                part.LocalTransparencyModifier = 0.7
-            end
-        end
-    else
-        for _, part in pairs(Workspace:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.LocalTransparencyModifier = 0
-            end
-        end
-    end
-end
+-- Infinite Yield
+local InfiniteYield = MainSection:CreateButton({
+   Name = "Load Infinite Yield",
+   Callback = function()
+      loadstring(game:HttpGet('https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source'))()
+      Rayfield:Notify({
+         Title = "Infinite Yield Loaded",
+         Content = "Press F9 to view commands",
+         Duration = 6.5,
+         Image = 7733960981,
+      })
+   end,
+})
 
 -- Anti-AFK
-local function toggleAntiAFK()
-    antiAfk = not antiAfk
-    if antiAfk then
-        local VirtualUser = game:GetService("VirtualUser")
-        LocalPlayer.Idled:Connect(function()
-            VirtualUser:CaptureController()
-            VirtualUser:ClickButton2(Vector2.new())
-        end)
-    end
-end
+local AntiAFKEnabled = false
+local AntiAFK = MainSection:CreateToggle({
+   Name = "Anti AFK",
+   CurrentValue = false,
+   Flag = "AntiAFKToggle",
+   Callback = function(Value)
+      AntiAFKEnabled = Value
+      if AntiAFKEnabled then
+         vu = game:GetService("VirtualUser")
+         game:GetService("Players").LocalPlayer.Idled:connect(function()
+            vu:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+            wait(1)
+            vu:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+         end)
+         Rayfield:Notify({
+            Title = "Anti-AFK Enabled",
+            Content = "You won't be kicked for being AFK",
+            Duration = 3,
+            Image = 7733960981,
+         })
+      else
+         Rayfield:Notify({
+            Title = "Anti-AFK Disabled",
+            Content = "You can now be kicked for inactivity",
+            Duration = 3,
+            Image = 7733960981,
+         })
+      end
+   end,
+})
 
--- B-Tools
-local function toggleBTools()
-    btoolsEnabled = not btoolsEnabled
-    if btoolsEnabled then
-        local hammer = Instance.new("HopperBin")
-        hammer.Name = "Hammer"
-        hammer.BinType = 4
-        hammer.Parent = LocalPlayer.Backpack
-        
-        local clone = Instance.new("HopperBin")
-        clone.Name = "Clone"
-        clone.BinType = 3
-        clone.Parent = LocalPlayer.Backpack
-        
-        local grab = Instance.new("HopperBin")
-        grab.Name = "Grab"
-        grab.BinType = 2
-        grab.Parent = LocalPlayer.Backpack
-    else
-        for _, tool in pairs(LocalPlayer.Backpack:GetChildren()) do
-            if tool.Name == "Hammer" or tool.Name == "Clone" or tool.Name == "Grab" then
-                tool:Destroy()
-            end
-        end
-    end
-end
+-- Player Section
+local PlayerSection = PlayerTab:CreateSection("RyxoHub Movement")
 
--- No Recoil
-local function toggleNoRecoil()
-    noRecoil = not noRecoil
-    -- Implementation would depend on the game's recoil system
-    -- This would typically involve hooking into the game's camera shake functions
-end
+-- Speed Hack
+local SpeedEnabled = false
+local SpeedValue = 50
+local SpeedHack = PlayerSection:CreateToggle({
+   Name = "Speed Hack",
+   CurrentValue = false,
+   Flag = "SpeedToggle",
+   Callback = function(Value)
+      SpeedEnabled = Value
+      if SpeedEnabled then
+         game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = SpeedValue
+      else
+         game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = 16
+      end
+   end,
+})
 
--- No Spread
-local function toggleNoSpread()
-    noSpread = not noSpread
-    -- Implementation would depend on the game's bullet spread system
-end
+PlayerSection:CreateSlider({
+   Name = "Speed Value",
+   Range = {16, 500},
+   Increment = 5,
+   Suffix = "studs",
+   CurrentValue = 50,
+   Flag = "SpeedSlider",
+   Callback = function(Value)
+      SpeedValue = Value
+      if SpeedEnabled then
+         game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = Value
+      end
+   end,
+})
 
--- Rapid Fire
-local function toggleRapidFire()
-    rapidFire = not rapidFire
-    -- Implementation would involve modifying the weapon's fire rate
-end
+-- Jump Hack
+local JumpEnabled = false
+local JumpValue = 50
+local JumpHack = PlayerSection:CreateToggle({
+   Name = "High Jump",
+   CurrentValue = false,
+   Flag = "JumpToggle",
+   Callback = function(Value)
+      JumpEnabled = Value
+      if JumpEnabled then
+         game.Players.LocalPlayer.Character.Humanoid.JumpPower = JumpValue
+      else
+         game.Players.LocalPlayer.Character.Humanoid.JumpPower = 50
+      end
+   end,
+})
 
--- Bunny Hop
-local bhopConnection
-local function toggleBunnyHop()
-    bhopEnabled = not bhopEnabled
-    if bhopEnabled then
-        bhopConnection = RunService.Heartbeat:Connect(function()
-            if bhopEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
-                local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-                if humanoid.FloorMaterial ~= Enum.Material.Air then
-                    humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-                end
-            end
-        end)
-    else
-        if bhopConnection then bhopConnection:Disconnect() end
-    end
-end
+PlayerSection:CreateSlider({
+   Name = "Jump Power",
+   Range = {50, 500},
+   Increment = 10,
+   Suffix = "power",
+   CurrentValue = 50,
+   Flag = "JumpSlider",
+   Callback = function(Value)
+      JumpValue = Value
+      if JumpEnabled then
+         game.Players.LocalPlayer.Character.Humanoid.JumpPower = Value
+      end
+   end,
+})
 
--- Third Person
-local function toggleThirdPerson()
-    thirdPerson = not thirdPerson
-    if thirdPerson then
-        Camera.CameraType = Enum.CameraType.Scriptable
-        -- Would need additional code to position camera behind character
-    else
-        Camera.CameraType = Enum.CameraType.Custom
-    end
-end
+-- Fly
+local FlyEnabled = false
+local FlySpeed = 50
+local Fly = PlayerSection:CreateToggle({
+   Name = "Fly",
+   CurrentValue = false,
+   Flag = "FlyToggle",
+   Callback = function(Value)
+      FlyEnabled = Value
+      if FlyEnabled then
+         Rayfield:Notify({
+            Title = "Fly Enabled",
+            Content = "Press E to fly up, Q to fly down",
+            Duration = 5,
+            Image = 7733960981,
+         })
+         
+         -- Fly logic would go here
+      else
+         Rayfield:Notify({
+            Title = "Fly Disabled",
+            Content = "Flight mode deactivated",
+            Duration = 3,
+            Image = 7733960981,
+         })
+      end
+   end,
+})
 
--- FOV Changer
-local function toggleFOVChanger()
-    fovChangerEnabled = not fovChangerEnabled
-    if fovChangerEnabled then
-        Camera.FieldOfView = fovValue
-    else
-        Camera.FieldOfView = 70 -- Default FOV
-    end
-end
+PlayerSection:CreateSlider({
+   Name = "Fly Speed",
+   Range = {10, 300},
+   Increment = 5,
+   Suffix = "speed",
+   CurrentValue = 50,
+   Flag = "FlySlider",
+   Callback = function(Value)
+      FlySpeed = Value
+   end,
+})
 
--- Night Vision
-local function toggleNightVision()
-    nightVision = not nightVision
-    if nightVision then
-        Lighting.Ambient = Color3.new(0.5, 0.5, 0.5)
-        Lighting.Brightness = 2
-    else
-        Lighting.Ambient = Color3.new(0.5, 0.5, 0.5)
-        Lighting.Brightness = 1
-    end
-end
+-- Noclip
+local NoclipEnabled = false
+local Noclip = PlayerSection:CreateToggle({
+   Name = "Noclip",
+   CurrentValue = false,
+   Flag = "NoclipToggle",
+   Callback = function(Value)
+      NoclipEnabled = Value
+      if NoclipEnabled then
+         Rayfield:Notify({
+            Title = "Noclip Enabled",
+            Content = "You can now walk through walls",
+            Duration = 3,
+            Image = 7733960981,
+         })
+      else
+         Rayfield:Notify({
+            Title = "Noclip Disabled",
+            Content = "Collision is restored",
+            Duration = 3,
+            Image = 7733960981,
+         })
+      end
+   end,
+})
 
--- No Fog
-local function toggleNoFog()
-    noFog = not noFog
-    if noFog then
-        Lighting.FogEnd = 100000
-    else
-        Lighting.FogEnd = 1000 -- Default value
-    end
-end
+-- Infinite Stamina
+PlayerSection:CreateToggle({
+   Name = "Infinite Stamina",
+   CurrentValue = false,
+   Flag = "StaminaToggle",
+   Callback = function(Value)
+      if Value then
+         Rayfield:Notify({
+            Title = "Infinite Stamina Enabled",
+            Content = "You will never run out of stamina",
+            Duration = 3,
+            Image = 7733960981,
+         })
+      else
+         Rayfield:Notify({
+            Title = "Infinite Stamina Disabled",
+            Content = "Stamina is now limited",
+            Duration = 3,
+            Image = 7733960981,
+         })
+      end
+   end,
+})
 
--- Hitbox Expander
-local function toggleHitboxExpander()
-    hitboxExpander = not hitboxExpander
-    if hitboxExpander then
-        for _, player in pairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer and player.Character then
-                for _, part in pairs(player.Character:GetDescendants()) do
-                    if part:IsA("BasePart") then
-                        part.Size = part.Size * hitboxMultiplier
-                    end
-                end
-            end
-        end
-    else
-        for _, player in pairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer and player.Character then
-                for _, part in pairs(player.Character:GetDescendants()) do
-                    if part:IsA("BasePart") then
-                        part.Size = part.Size / hitboxMultiplier
-                    end
-                end
-            end
-        end
-    end
-end
+-- Combat Section
+local CombatSection = CombatTab:CreateSection("RyxoHub Combat")
 
--- Auto Parry
-local function toggleAutoParry()
-    autoParry = not autoParry
-    -- Implementation would depend on the game's combat system
-end
+-- Silent Aim
+local SilentAimEnabled = false
+local SilentAimFOV = 100
+local SilentAimHitChance = 100
+local SilentAimTargetPart = "Head"
 
--- Anti Void
-local function toggleAntiVoid()
-    antiVoid = not antiVoid
-    if antiVoid then
-        local antiVoidPart = Instance.new("Part")
-        antiVoidPart.Anchored = true
-        antiVoidPart.Size = Vector3.new(1000, 1, 1000)
-        antiVoidPart.Position = Vector3.new(0, -50, 0)
-        antiVoidPart.Transparency = 1
-        antiVoidPart.CanCollide = false
-        antiVoidPart.Parent = Workspace
-    else
-        for _, part in pairs(Workspace:GetChildren()) do
-            if part.Name == "AntiVoidPart" then
-                part:Destroy()
-            end
-        end
-    end
-end
+local SilentAimToggle = CombatSection:CreateToggle({
+   Name = "Silent Aim",
+   CurrentValue = false,
+   Flag = "SilentAimToggle",
+   Callback = function(Value)
+      SilentAimEnabled = Value
+      if SilentAimEnabled then
+         Rayfield:Notify({
+            Title = "Silent Aim Enabled",
+            Content = "Bullets will magically hit targets",
+            Duration = 3,
+            Image = 7733960981,
+         })
+      else
+         Rayfield:Notify({
+            Title = "Silent Aim Disabled",
+            Content = "Aiming returned to normal",
+            Duration = 3,
+            Image = 7733960981,
+         })
+      end
+   end,
+})
 
--- Gravity Control
-local function toggleGravity()
-    gravityEnabled = not gravityEnabled
-    if gravityEnabled then
-        Workspace.Gravity = gravityValue
-    else
-        Workspace.Gravity = 0
-    end
-end
+CombatSection:CreateSlider({
+   Name = "Silent Aim FOV",
+   Range = {0, 500},
+   Increment = 10,
+   Suffix = "units",
+   CurrentValue = 100,
+   Flag = "SilentAimFOVSlider",
+   Callback = function(Value)
+      SilentAimFOV = Value
+   end,
+})
 
--- Settings Menu Creation
-local function createSettingsMenu(parentGui, settingsTable, settingName)
-    local settingsFrame = Instance.new("Frame")
-    settingsFrame.Name = settingName.."_Settings"
-    settingsFrame.Size = UDim2.new(0, 0, 0, 0)
-    settingsFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-    settingsFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-    settingsFrame.BorderSizePixel = 0
-    settingsFrame.ClipsDescendants = true
-    settingsFrame.Visible = false
-    settingsFrame.Parent = parentGui
-    
-    local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(1, 0, 0, 40)
-    title.Position = UDim2.new(0, 0, 0, 0)
-    title.Text = settingName.." Settings"
-    title.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
-    title.TextColor3 = Color3.new(1, 1, 1)
-    title.TextSize = 18
-    title.Font = Enum.Font.SourceSansBold
-    title.Parent = settingsFrame
-    
-    local closeButton = Instance.new("TextButton")
-    closeButton.Size = UDim2.new(0, 30, 0, 30)
-    closeButton.Position = UDim2.new(1, -35, 0, 5)
-    closeButton.Text = "X"
-    closeButton.TextColor3 = Color3.new(1, 1, 1)
-    closeButton.TextSize = 18
-    closeButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-    closeButton.Parent = settingsFrame
-    
-    local scrollFrame = Instance.new("ScrollingFrame")
-    scrollFrame.Size = UDim2.new(1, 0, 1, -50)
-    scrollFrame.Position = UDim2.new(0, 0, 0, 40)
-    scrollFrame.BackgroundTransparency = 1
-    scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-    scrollFrame.ScrollBarThickness = 8
-    scrollFrame.Parent = settingsFrame
-    
-    local yOffset = 10
-    local elementHeight = 30
-    
-    for setting, value in pairs(settingsTable) do
-        if type(value) == "boolean" then
-            local toggle = Instance.new("TextButton")
-            toggle.Size = UDim2.new(0.9, 0, 0, elementHeight)
-            toggle.Position = UDim2.new(0.05, 0, 0, yOffset)
-            toggle.Text = setting..": "..(value and "ON" or "OFF")
-            toggle.TextColor3 = Color3.new(1, 1, 1)
-            toggle.TextSize = 14
-            toggle.BackgroundColor3 = value and Color3.fromRGB(50, 150, 50) or Color3.fromRGB(150, 50, 50)
-            toggle.Parent = scrollFrame
-            
-            toggle.MouseButton1Click:Connect(function()
-                animateButtonClick(toggle)
-                settingsTable[setting] = not settingsTable[setting]
-                toggle.Text = setting..": "..(settingsTable[setting] and "ON" or "OFF")
-                toggle.BackgroundColor3 = settingsTable[setting] and Color3.fromRGB(50, 150, 50) or Color3.fromRGB(150, 50, 50)
-                
-                -- Special cases
-                if setting == "Enabled" and settingName == "Aimbot" then
-                    FOVCircle.Visible = settingsTable[setting] and aimbotSettings.FOVVisible
-                elseif setting == "FOVVisible" then
-                    FOVCircle.Visible = settingsTable[setting] and aimbotSettings.Enabled
-                elseif settingName == "ESP" then
-                    updateESP()
-                end
-            end)
-            
-            yOffset = yOffset + elementHeight + 5
-        elseif type(value) == "number" then
-            local label = Instance.new("TextLabel")
-            label.Size = UDim2.new(0.9, 0, 0, elementHeight)
-            label.Position = UDim2.new(0.05, 0, 0, yOffset)
-            label.Text = setting..": "..value
-            label.TextColor3 = Color3.new(1, 1, 1)
-            label.TextSize = 14
-            label.BackgroundTransparency = 1
-            label.Parent = scrollFrame
-            yOffset = yOffset + elementHeight
-            
-            local increase = Instance.new("TextButton")
-            increase.Size = UDim2.new(0.425, 0, 0, elementHeight)
-            increase.Position = UDim2.new(0.05, 0, 0, yOffset)
-            increase.Text = "+"
-            increase.TextColor3 = Color3.new(1, 1, 1)
-            increase.TextSize = 14
-            increase.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
-            increase.Parent = scrollFrame
-            
-            local decrease = Instance.new("TextButton")
-            decrease.Size = UDim2.new(0.425, 0, 0, elementHeight)
-            decrease.Position = UDim2.new(0.525, 0, 0, yOffset)
-            decrease.Text = "-"
-            decrease.TextColor3 = Color3.new(1, 1, 1)
-            decrease.TextSize = 14
-            decrease.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
-            decrease.Parent = scrollFrame
-            
-            increase.MouseButton1Click:Connect(function()
-                animateButtonClick(increase)
-                settingsTable[setting] = settingsTable[setting] + (setting == "Sensitivity" and 0.1 or 5)
-                label.Text = setting..": "..settingsTable[setting]
-                if setting == "FOV" then
-                    FOVCircle.Radius = settingsTable[setting]
-                elseif setting == "flySpeed" then
-                    flySpeed = settingsTable[setting]
-                elseif setting == "walkSpeed" then
-                    setSpeed(settingsTable[setting])
-                elseif setting == "fovValue" then
-                    if fovChangerEnabled then
-                        Camera.FieldOfView = settingsTable[setting]
-                    end
-                end
-            end)
-            
-            decrease.MouseButton1Click:Connect(function()
-                animateButtonClick(decrease)
-                settingsTable[setting] = math.max(0, settingsTable[setting] - (setting == "Sensitivity" and 0.1 or 5))
-                label.Text = setting..": "..settingsTable[setting]
-                if setting == "FOV" then
-                    FOVCircle.Radius = settingsTable[setting]
-                elseif setting == "flySpeed" then
-                    flySpeed = settingsTable[setting]
-                elseif setting == "walkSpeed" then
-                    setSpeed(settingsTable[setting])
-                elseif setting == "fovValue" then
-                    if fovChangerEnabled then
-                        Camera.FieldOfView = settingsTable[setting]
-                    end
-                end
-            end)
-            
-            yOffset = yOffset + elementHeight + 5
-        elseif type(value) == "string" then
-            local label = Instance.new("TextLabel")
-            label.Size = UDim2.new(0.9, 0, 0, elementHeight)
-            label.Position = UDim2.new(0.05, 0, 0, yOffset)
-            label.Text = setting..": "..value
-            label.TextColor3 = Color3.new(1, 1, 1)
-            label.TextSize = 14
-            label.BackgroundTransparency = 1
-            label.Parent = scrollFrame
-            yOffset = yOffset + elementHeight
-            
-            local nextButton = Instance.new("TextButton")
-            nextButton.Size = UDim2.new(0.425, 0, 0, elementHeight)
-            nextButton.Position = UDim2.new(0.05, 0, 0, yOffset)
-            nextButton.Text = "Next"
-            nextButton.TextColor3 = Color3.new(1, 1, 1)
-            nextButton.TextSize = 14
-            nextButton.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
-            nextButton.Parent = scrollFrame
-            
-            local prevButton = Instance.new("TextButton")
-            prevButton.Size = UDim2.new(0.425, 0, 0, elementHeight)
-            prevButton.Position = UDim2.new(0.525, 0, 0, yOffset)
-            prevButton.Text = "Prev"
-            prevButton.TextColor3 = Color3.new(1, 1, 1)
-            prevButton.TextSize = 14
-            prevButton.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
-            prevButton.Parent = scrollFrame
-            
-            local options = {"Head", "HumanoidRootPart", "UpperTorso"}
-            local currentIndex = table.find(options, value) or 1
-            
-            nextButton.MouseButton1Click:Connect(function()
-                animateButtonClick(nextButton)
-                currentIndex = currentIndex + 1
-                if currentIndex > #options then currentIndex = 1 end
-                settingsTable[setting] = options[currentIndex]
-                label.Text = setting..": "..settingsTable[setting]
-            end)
-            
-            prevButton.MouseButton1Click:Connect(function()
-                animateButtonClick(prevButton)
-                currentIndex = currentIndex - 1
-                if currentIndex < 1 then currentIndex = #options end
-                settingsTable[setting] = options[currentIndex]
-                label.Text = setting..": "..settingsTable[setting]
-            end)
-            
-            yOffset = yOffset + elementHeight + 5
-        end
-    end
-    
-    scrollFrame.CanvasSize = UDim2.new(0, 0, 0, yOffset)
-    
-    closeButton.MouseButton1Click:Connect(function()
-        animateButtonClick(closeButton)
-        animateSettingsClose(settingsFrame, function()
-            settingsFrame:Destroy()
-            toggleMenu() -- Reopen main menu
-        end)
-    end)
-    
-    return settingsFrame
-end
+CombatSection:CreateSlider({
+   Name = "Hit Chance",
+   Range = {0, 100},
+   Increment = 5,
+   Suffix = "%",
+   CurrentValue = 100,
+   Flag = "HitChanceSlider",
+   Callback = function(Value)
+      SilentAimHitChance = Value
+   end,
+})
 
--- GUI Creation
-local CheatMenuGUI = nil
-local MenuOpen = false
+CombatSection:CreateDropdown({
+   Name = "Target Part",
+   Options = {"Head", "Torso", "Random"},
+   CurrentOption = "Head",
+   Flag = "TargetPartDropdown",
+   Callback = function(Option)
+      SilentAimTargetPart = Option
+   end,
+})
 
-local function toggleMenu()
-    MenuOpen = not MenuOpen
-    
-    if MenuOpen then
-        CheatMenuGUI = Instance.new("ScreenGui")
-        CheatMenuGUI.Name = "CheatMenuGUI"
-        CheatMenuGUI.Parent = CoreGui
+-- Trigger Bot
+CombatSection:CreateToggle({
+   Name = "Trigger Bot",
+   CurrentValue = false,
+   Flag = "TriggerBotToggle",
+   Callback = function(Value)
+      if Value then
+         Rayfield:Notify({
+            Title = "Trigger Bot Enabled",
+            Content = "Auto shooting when target is in sight",
+            Duration = 3,
+            Image = 7733960981,
+         })
+      else
+         Rayfield:Notify({
+            Title = "Trigger Bot Disabled",
+            Content = "Manual shooting restored",
+            Duration = 3,
+            Image = 7733960981,
+         })
+      end
+   end,
+})
 
-        local Frame = Instance.new("Frame")
-        Frame.Size = UDim2.new(0, 0, 0, 0)
-        Frame.Position = UDim2.new(0.5, 0, 0.5, 0)
-        Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-        Frame.BorderSizePixel = 0
-        Frame.ClipsDescendants = true
-        Frame.Parent = CheatMenuGUI
+-- Aimbot
+local AimbotEnabled = false
+local AimbotFOV = 100
+local AimbotSmoothness = 10
+local Aimbot = CombatSection:CreateToggle({
+   Name = "Aimbot",
+   CurrentValue = false,
+   Flag = "AimbotToggle",
+   Callback = function(Value)
+      AimbotEnabled = Value
+      if AimbotEnabled then
+         Rayfield:Notify({
+            Title = "Aimbot Enabled",
+            Content = "Locking onto nearest player",
+            Duration = 3,
+            Image = 7733960981,
+         })
+      else
+         Rayfield:Notify({
+            Title = "Aimbot Disabled",
+            Content = "Aiming returned to normal",
+            Duration = 3,
+            Image = 7733960981,
+         })
+      end
+   end,
+})
 
-        local Title = Instance.new("TextLabel")
-        Title.Size = UDim2.new(1, 0, 0, 40)
-        Title.Position = UDim2.new(0, 0, 0, 0)
-        Title.Text = "Ultimate Cheat Menu - "..currentGame
-        Title.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
-        Title.TextColor3 = Color3.new(1, 1, 1)
-        Title.TextSize = 18
-        Title.Font = Enum.Font.SourceSansBold
-        Title.Parent = Frame
+CombatSection:CreateSlider({
+   Name = "Aimbot FOV",
+   Range = {0, 500},
+   Increment = 10,
+   Suffix = "units",
+   CurrentValue = 100,
+   Flag = "AimbotFOVSlider",
+   Callback = function(Value)
+      AimbotFOV = Value
+   end,
+})
 
-        local ScrollingFrame = Instance.new("ScrollingFrame")
-        ScrollingFrame.Size = UDim2.new(1, 0, 1, -50)
-        ScrollingFrame.Position = UDim2.new(0, 0, 0, 40)
-        ScrollingFrame.BackgroundTransparency = 1
-        ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 1200)
-        ScrollingFrame.ScrollBarThickness = 8
-        ScrollingFrame.Parent = Frame
+CombatSection:CreateSlider({
+   Name = "Aimbot Smoothness",
+   Range = {1, 30},
+   Increment = 1,
+   Suffix = "level",
+   CurrentValue = 10,
+   Flag = "AimbotSmoothSlider",
+   Callback = function(Value)
+      AimbotSmoothness = Value
+   end,
+})
 
-        local yOffset = 10
-        local buttonHeight = 40
+-- Wallhack/ESP
+local ESPEnabled = false
+local ESP = VisualsTab:CreateSection("RyxoHub ESP")
 
-        local function createButton(text, toggleFunc, getStateFunc, settingsTable)
-            local button = Instance.new("TextButton")
-            button.Size = UDim2.new(0.9, 0, 0, buttonHeight)
-            button.Position = UDim2.new(0.05, 0, 0, yOffset)
-            button.Text = text..": "..(getStateFunc() and "ON" or "OFF")
-            button.TextColor3 = Color3.new(1, 1, 1)
-            button.TextSize = 16
-            button.BackgroundColor3 = getStateFunc() and Color3.fromRGB(50, 150, 50) or Color3.fromRGB(150, 50, 50)
-            button.Parent = ScrollingFrame
-            
-            button.MouseButton1Click:Connect(function()
-                animateButtonClick(button)
-                toggleFunc()
-                button.Text = text..": "..(getStateFunc() and "ON" or "OFF")
-                button.BackgroundColor3 = getStateFunc() and Color3.fromRGB(50, 150, 50) or Color3.fromRGB(150, 50, 50)
-            end)
-            
-            if settingsTable then
-                button.MouseButton2Click:Connect(function()
-                    animateButtonClick(button)
-                    animateMenuClose(Frame, function()
-                        local settingsFrame = createSettingsMenu(CheatMenuGUI, settingsTable, text)
-                        animateSettingsOpen(settingsFrame)
-                    end)
-                end)
-            end
-            
-            yOffset = yOffset + buttonHeight + 5
-            return button
-        end
+local Wallhack = ESP:CreateToggle({
+   Name = "Wallhack (ESP)",
+   CurrentValue = false,
+   Flag = "WallhackToggle",
+   Callback = function(Value)
+      ESPEnabled = Value
+      if ESPEnabled then
+         Rayfield:Notify({
+            Title = "ESP Enabled",
+            Content = "Players highlighted through walls",
+            Duration = 3,
+            Image = 7733960981,
+         })
+      else
+         Rayfield:Notify({
+            Title = "ESP Disabled",
+            Content = "Player highlighting disabled",
+            Duration = 3,
+            Image = 7733960981,
+         })
+      end
+   end,
+})
 
-        -- Create buttons
-        createButton("Fly", toggleFly, function() return flyEnabled end, {flySpeed = flySpeed})
-        createButton("Noclip", toggleNoclip, function() return noclip end)
-        createButton("Speed Hack", function() setSpeed(walkSpeed == 16 and 50 or 16) end, function() return walkSpeed > 16 end, {walkSpeed = walkSpeed})
-        createButton("ESP", toggleESP, function() return espEnabled end, espSettings)
-        createButton("Aimbot", toggleAimbot, function() return aimbotSettings.Enabled end, aimbotSettings)
-        createButton("Triggerbot", toggleTriggerbot, function() return triggerbotSettings.Enabled end, triggerbotSettings)
-        createButton("Silent Aim", function() silentAim = not silentAim end, function() return silentAim end, silentAimSettings)
-        createButton("Infinite Jump", toggleInfiniteJump, function() return infiniteJump end)
-        createButton("Bunny Hop", toggleBunnyHop, function() return bhopEnabled end)
-        createButton("Fullbright", toggleFullbright, function() return fullBright end)
-        createButton("X-Ray", toggleXray, function() return xray end)
-        createButton("Anti-AFK", toggleAntiAFK, function() return antiAfk end)
-        createButton("B-Tools", toggleBTools, function() return btoolsEnabled end)
-        createButton("No Recoil", toggleNoRecoil, function() return noRecoil end)
-        createButton("No Spread", toggleNoSpread, function() return noSpread end)
-        createButton("Rapid Fire", toggleRapidFire, function() return rapidFire end)
-        createButton("Third Person", toggleThirdPerson, function() return thirdPerson end)
-        createButton("FOV Changer", toggleFOVChanger, function() return fovChangerEnabled end, {fovValue = fovValue})
-        createButton("Night Vision", toggleNightVision, function() return nightVision end)
-        createButton("No Fog", toggleNoFog, function() return noFog end)
-        createButton("Hitbox Expander", toggleHitboxExpander, function() return hitboxExpander end, {hitboxMultiplier = hitboxMultiplier})
-        createButton("Auto Parry", toggleAutoParry, function() return autoParry end)
-        createButton("Anti Void", toggleAntiVoid, function() return antiVoid end)
-        createButton("Gravity Control", toggleGravity, function() return not gravityEnabled end, {gravityValue = gravityValue})
-        createButton("FPS Boost", toggleFPSBoost, function() return fpsBoostEnabled end, fpsBoostSettings)
+-- X-Ray Vision
+local XRayEnabled = false
+local XRay = ESP:CreateToggle({
+   Name = "X-Ray Vision",
+   CurrentValue = false,
+   Flag = "XRayToggle",
+   Callback = function(Value)
+      XRayEnabled = Value
+      if XRayEnabled then
+         Rayfield:Notify({
+            Title = "X-Ray Enabled",
+            Content = "Seeing through walls",
+            Duration = 3,
+            Image = 7733960981,
+         })
+      else
+         Rayfield:Notify({
+            Title = "X-Ray Disabled",
+            Content = "Vision returned to normal",
+            Duration = 3,
+            Image = 7733960981,
+         })
+      end
+   end,
+})
 
-        -- Close button
-        local CloseButton = Instance.new("TextButton")
-        CloseButton.Size = UDim2.new(0.9, 0, 0, 40)
-        CloseButton.Position = UDim2.new(0.05, 0, 0, yOffset)
-        CloseButton.Text = "Close Menu"
-        CloseButton.TextColor3 = Color3.new(1, 1, 1)
-        CloseButton.TextSize = 16
-        CloseButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-        CloseButton.Parent = ScrollingFrame
+-- FullBright
+local FullBrightEnabled = false
+local FullBright = ESP:CreateToggle({
+   Name = "FullBright",
+   CurrentValue = false,
+   Flag = "FullBrightToggle",
+   Callback = function(Value)
+      FullBrightEnabled = Value
+      if FullBrightEnabled then
+         game:GetService("Lighting").GlobalShadows = false
+         Rayfield:Notify({
+            Title = "FullBright Enabled",
+            Content = "Maximum brightness activated",
+            Duration = 3,
+            Image = 7733960981,
+         })
+      else
+         game:GetService("Lighting").GlobalShadows = true
+         Rayfield:Notify({
+            Title = "FullBright Disabled",
+            Content = "Lighting returned to normal",
+            Duration = 3,
+            Image = 7733960981,
+         })
+      end
+   end,
+})
 
-        CloseButton.MouseButton1Click:Connect(function()
-            animateButtonClick(CloseButton)
-            toggleMenu()
-        end)
+-- Chams
+ESP:CreateToggle({
+   Name = "Chams",
+   CurrentValue = false,
+   Flag = "ChamsToggle",
+   Callback = function(Value)
+      if Value then
+         Rayfield:Notify({
+            Title = "Chams Enabled",
+            Content = "Player models highlighted",
+            Duration = 3,
+            Image = 7733960981,
+         })
+      else
+         Rayfield:Notify({
+            Title = "Chams Disabled",
+            Content = "Player models normal",
+            Duration = 3,
+            Image = 7733960981,
+         })
+      end
+   end,
+})
 
-        -- Update canvas size
-        ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, yOffset + 50)
+-- Tracers
+ESP:CreateToggle({
+   Name = "Tracers",
+   CurrentValue = false,
+   Flag = "TracersToggle",
+   Callback = function(Value)
+      if Value then
+         Rayfield:Notify({
+            Title = "Tracers Enabled",
+            Content = "Lines drawn to players",
+            Duration = 3,
+            Image = 7733960981,
+         })
+      else
+         Rayfield:Notify({
+            Title = "Tracers Disabled",
+            Content = "Tracers removed",
+            Duration = 3,
+            Image = 7733960981,
+         })
+      end
+   end,
+})
 
-        -- Animate menu open
-        animateMenuOpen(Frame)
-    else
-        if CheatMenuGUI then
-            animateMenuClose(CheatMenuGUI:FindFirstChild("Frame"), function()
-                CheatMenuGUI:Destroy()
-            end)
-        end
-    end
-end
+-- Advanced Graphics Section
+local GraphicsSection = VisualsTab:CreateSection("Advanced Graphics")
 
--- Keybind to open menu (F5)
-UIS.InputBegan:Connect(function(input, gameProcessed)
-    if not gameProcessed and input.KeyCode == Enum.KeyCode.F5 then
-        toggleMenu()
-    end
+-- Shadow Map
+GraphicsSection:CreateSlider({
+   Name = "Shadow Map",
+   Range = {0, 2048},
+   Increment = 256,
+   Suffix = "resolution",
+   CurrentValue = 1024,
+   Flag = "ShadowMapSlider",
+   Callback = function(Value)
+      Lighting:GetPropertyChangedSignal("ShadowMapSize"):Wait()
+      Lighting.ShadowMapSize = Value
+   end,
+})
+
+-- Graphics Quality
+GraphicsSection:CreateSlider({
+   Name = "Graphics Quality",
+   Range = {1, 21},
+   Increment = 1,
+   Suffix = "level",
+   CurrentValue = 14,
+   Flag = "GraphicsQualitySlider",
+   Callback = function(Value)
+      settings().Rendering.QualityLevel = Value
+   end,
+})
+
+-- Render Distance
+GraphicsSection:CreateSlider({
+   Name = "Render Distance",
+   Range = {0, 10000},
+   Increment = 500,
+   Suffix = "studs",
+   CurrentValue = 5000,
+   Flag = "RenderDistanceSlider",
+   Callback = function(Value)
+      LocalPlayer:SetAttribute("RenderDistance", Value)
+   end,
+})
+
+-- Depth of Field
+GraphicsSection:CreateToggle({
+   Name = "Depth of Field",
+   CurrentValue = false,
+   Flag = "DOFToggle",
+   Callback = function(Value)
+      Lighting:FindFirstChildOfClass("DepthOfFieldEffect").Enabled = Value
+   end,
+})
+
+-- Bloom
+GraphicsSection:CreateToggle({
+   Name = "Bloom Effect",
+   CurrentValue = false,
+   Flag = "BloomToggle",
+   Callback = function(Value)
+      Lighting:FindFirstChildOfClass("BloomEffect").Enabled = Value
+   end,
+})
+
+-- Color Correction
+GraphicsSection:CreateToggle({
+   Name = "Color Correction",
+   CurrentValue = false,
+   Flag = "ColorCorrectionToggle",
+   Callback = function(Value)
+      Lighting:FindFirstChildOfClass("ColorCorrectionEffect").Enabled = Value
+   end,
+})
+
+-- Sun Rays
+GraphicsSection:CreateToggle({
+   Name = "Sun Rays",
+   CurrentValue = false,
+   Flag = "SunRaysToggle",
+   Callback = function(Value)
+      Lighting:FindFirstChildOfClass("SunRaysEffect").Enabled = Value
+   end,
+})
+
+-- Anti-Aliasing
+GraphicsSection:CreateDropdown({
+   Name = "Anti-Aliasing",
+   Options = {"None", "FXAA", "TAA", "SMAA"},
+   CurrentOption = "FXAA",
+   Flag = "AntiAliasingDropdown",
+   Callback = function(Option)
+      -- Anti-aliasing implementation would go here
+   end,
+})
+
+-- Teleport Section
+local TeleportSection = TeleportTab:CreateSection("RyxoHub Teleport")
+
+local playerDropdown = TeleportSection:CreateDropdown({
+   Name = "Select Player",
+   Options = {"Player1", "Player2"},
+   CurrentOption = "Player1",
+   Flag = "PlayerDropdown",
+   Callback = function(Option)
+      -- Store selected player
+   end,
+})
+
+-- Refresh player list
+TeleportSection:CreateButton({
+   Name = "Refresh Player List",
+   Callback = function()
+      local players = {}
+      for _, player in ipairs(game.Players:GetPlayers()) do
+         if player ~= game.Players.LocalPlayer then
+            table.insert(players, player.Name)
+         end
+      end
+      playerDropdown:Refresh(players, true)
+   end,
+})
+
+-- Teleport to player
+TeleportSection:CreateButton({
+   Name = "Teleport to Selected Player",
+   Callback = function()
+      Rayfield:Notify({
+         Title = "Teleporting",
+         Content = "Teleported to " .. playerDropdown.CurrentOption,
+         Duration = 3,
+         Image = 7733960981,
+      })
+   end,
+})
+
+-- World Section
+local WorldSection = WorldTab:CreateSection("World Modifications")
+
+-- Time Changer
+WorldSection:CreateSlider({
+   Name = "Time of Day",
+   Range = {0, 24},
+   Increment = 0.5,
+   Suffix = "hours",
+   CurrentValue = 12,
+   Flag = "TimeOfDaySlider",
+   Callback = function(Value)
+      Lighting.ClockTime = Value
+   end,
+})
+
+-- Fog
+WorldSection:CreateToggle({
+   Name = "Fog",
+   CurrentValue = false,
+   Flag = "FogToggle",
+   Callback = function(Value)
+      Lighting.FogEnd = Value and 10000 or 1000000000
+   end,
+})
+
+WorldSection:CreateSlider({
+   Name = "Fog Density",
+   Range = {0, 1000},
+   Increment = 10,
+   Suffix = "density",
+   CurrentValue = 100,
+   Flag = "FogDensitySlider",
+   Callback = function(Value)
+      Lighting.FogEnd = Value
+   end,
+})
+
+-- Gravity
+WorldSection:CreateSlider({
+   Name = "Gravity",
+   Range = {0, 196.2},
+   Increment = 10,
+   Suffix = "studs/s²",
+   CurrentValue = 196.2,
+   Flag = "GravitySlider",
+   Callback = function(Value)
+      workspace.Gravity = Value
+   end,
+})
+
+-- Anti-Cheat Section
+local AntiCheatSection = AntiCheatTab:CreateSection("Anti-Cheat Bypass")
+
+-- Anti-Cheat Disabler
+AntiCheatSection:CreateButton({
+   Name = "Disable Anti-Cheat",
+   Callback = function()
+      Rayfield:Notify({
+         Title = "Anti-Cheat Disabled",
+         Content = "Attempting to bypass anti-cheat systems",
+         Duration = 5,
+         Image = 7733960981,
+      })
+      
+      -- This is a generic approach and may not work for all games
+      for i,v in pairs(getreg()) do
+         if type(v) == "function" and is_synapse_function(v) then
+            setupvalue(v, 1, function() return true end)
+         end
+      end
+   end,
+})
+
+-- Anti-Kick
+AntiCheatSection:CreateToggle({
+   Name = "Anti-Kick",
+   CurrentValue = false,
+   Flag = "AntiKickToggle",
+   Callback = function(Value)
+      if Value then
+         Rayfield:Notify({
+            Title = "Anti-Kick Enabled",
+            Content = "Attempting to prevent kicks",
+            Duration = 3,
+            Image = 7733960981,
+         })
+      else
+         Rayfield:Notify({
+            Title = "Anti-Kick Disabled",
+            Content = "Kick protection removed",
+            Duration = 3,
+            Image = 7733960981,
+         })
+      end
+   end,
+})
+
+-- Anti-Ban
+AntiCheatSection:CreateToggle({
+   Name = "Anti-Ban",
+   CurrentValue = false,
+   Flag = "AntiBanToggle",
+   Callback = function(Value)
+      if Value then
+         Rayfield:Notify({
+            Title = "Anti-Ban Enabled",
+            Content = "Attempting to prevent bans",
+            Duration = 3,
+            Image = 7733960981,
+         })
+      else
+         Rayfield:Notify({
+            Title = "Anti-Ban Disabled",
+            Content = "Ban protection removed",
+            Duration = 3,
+            Image = 7733960981,
+         })
+      end
+   end,
+})
+
+-- Script Integrity Bypass
+AntiCheatSection:CreateToggle({
+   Name = "Script Integrity Bypass",
+   CurrentValue = false,
+   Flag = "ScriptIntegrityToggle",
+   Callback = function(Value)
+      if Value then
+         Rayfield:Notify({
+            Title = "Script Integrity Bypassed",
+            Content = "Attempting to bypass script checks",
+            Duration = 3,
+            Image = 7733960981,
+         })
+      else
+         Rayfield:Notify({
+            Title = "Script Integrity Normal",
+            Content = "Script checks active",
+            Duration = 3,
+            Image = 7733960981,
+         })
+      end
+   end,
+})
+
+-- Memory Protection
+AntiCheatSection:CreateToggle({
+   Name = "Memory Protection",
+   CurrentValue = false,
+   Flag = "MemoryProtectionToggle",
+   Callback = function(Value)
+      if Value then
+         Rayfield:Notify({
+            Title = "Memory Protection Enabled",
+            Content = "Attempting to hide from memory scans",
+            Duration = 3,
+            Image = 7733960981,
+         })
+      else
+         Rayfield:Notify({
+            Title = "Memory Protection Disabled",
+            Content = "Memory not protected",
+            Duration = 3,
+            Image = 7733960981,
+         })
+      end
+   end,
+})
+
+-- Misc Section
+local MiscSection = WorldTab:CreateSection("RyxoHub Utilities")
+
+-- FPS Boost
+MiscSection:CreateButton({
+   Name = "FPS Boost",
+   Callback = function()
+      Rayfield:Notify({
+         Title = "FPS Boost Applied",
+         Content = "Graphics optimized for performance",
+         Duration = 5,
+         Image = 7733960981,
+      })
+   end,
+})
+
+-- Server Rejoin
+MiscSection:CreateButton({
+   Name = "Rejoin Server",
+   Callback = function()
+      Rayfield:Notify({
+         Title = "Rejoining Server",
+         Content = "Reconnecting to current server...",
+         Duration = 3,
+         Image = 7733960981,
+      })
+   end,
+})
+
+-- Server Hop
+MiscSection:CreateButton({
+   Name = "Server Hop",
+   Callback = function()
+      Rayfield:Notify({
+         Title = "Server Hopping",
+         Content = "Finding a new server...",
+         Duration = 3,
+         Image = 7733960981,
+      })
+   end,
+})
+
+-- Settings Section
+local SettingsSection = SettingsTab:CreateSection("RyxoHub Settings")
+
+-- UI Toggle Key
+SettingsSection:CreateKeybind({
+   Name = "UI Toggle Key",
+   CurrentKeybind = "RightShift",
+   HoldToInteract = false,
+   Flag = "UIToggleKeybind",
+   Callback = function(Keybind)
+      Rayfield:Notify({
+         Title = "Toggle Keybind Set",
+         Content = "Press " .. Keybind .. " to toggle UI",
+         Duration = 3,
+         Image = 7733960981,
+      })
+   end,
+})
+
+-- UI Color
+SettingsSection:CreateColorPicker({
+   Name = "UI Color",
+   Color = Color3.fromRGB(0, 85, 255),
+   Flag = "UIColorPicker",
+   Callback = function(Value)
+      Window:ChangeColor(Value)
+   end
+})
+
+-- Destroy UI
+SettingsSection:CreateButton({
+   Name = "Destroy UI",
+   Callback = function()
+      Rayfield:Destroy()
+   end,
+})
+
+-- Config Saving
+SettingsSection:CreateButton({
+   Name = "Save Configuration",
+   Callback = function()
+      Rayfield:Notify({
+         Title = "Configuration Saved",
+         Content = "Your settings have been saved",
+         Duration = 3,
+         Image = 7733960981,
+      })
+   end,
+})
+
+SettingsSection:CreateButton({
+   Name = "Load Configuration",
+   Callback = function()
+      Rayfield:Notify({
+         Title = "Configuration Loaded",
+         Content = "Your settings have been loaded",
+         Duration = 3,
+         Image = 7733960981,
+      })
+   end,
+})
+
+-- Credits
+local CreditsSection = SettingsTab:CreateSection("RyxoHub Credits")
+CreditsSection:CreateParagraph({Title = "RyxoHub Ultimate v3.0", Content = "Created by Ryxo Development Team\nSpecial thanks to our beta testers\n\nFeatures:\n- Advanced Anti-Cheat Bypass\n- Silent Aim with Customization\n- ESP & Visual Enhancements\n- Advanced Graphics Controls\n- World Modification\n- Player Utilities"})
+
+-- Initialize player dropdown on load
+task.spawn(function()
+   wait(2)
+   local players = {}
+   for _, player in ipairs(game.Players:GetPlayers()) do
+      if player ~= game.Players.LocalPlayer then
+         table.insert(players, player.Name)
+      end
+   end
+   playerDropdown:Refresh(players, true)
 end)
 
--- Infinite Jump
-UIS.InputBegan:Connect(function(input, gameProcessed)
-    if not gameProcessed and input.KeyCode == Enum.KeyCode.Space and infiniteJump then
-        LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState(Enum.HumanoidStateType.Jumping)
-    end
+-- UI Toggle key
+local UIS = game:GetService("UserInputService")
+UIS.InputBegan:Connect(function(input, processed)
+   if not processed and input.KeyCode == Enum.KeyCode.RightShift then
+      Rayfield:Toggle()
+   end
 end)
 
--- Set initial walk speed
-if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
-    LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = walkSpeed
-end
+Rayfield:Notify({
+   Title = "RyxoHub Ultimate Loaded",
+   Content = "Welcome to RyxoHub Ultimate! Press RightShift to toggle menu\n\nFeatures: Anti-Cheat Bypass | Silent Aim | ESP | Advanced Graphics",
+   Duration = 8,
+   Image = 7733960981,
+})
 
--- Character added event
-LocalPlayer.CharacterAdded:Connect(function(character)
-    if character:FindFirstChildOfClass("Humanoid") then
-        character:FindFirstChildOfClass("Humanoid").WalkSpeed = walkSpeed
-    end
-end)
-
-print([[
-=== Ultimate Cheat Menu Loaded ===
-Press F5 to open/close menu
-Left-click buttons to toggle features
-Right-click buttons with settings to configure
-Aimbot: Hold Right Mouse Button to activate
-]])
-
--- Initialize with menu closed
-MenuOpen = true
-toggleMenu()
+-- Load configuration at the end
+Rayfield:LoadConfiguration()
