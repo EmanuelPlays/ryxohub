@@ -98,6 +98,12 @@ local gameDatabase = {
         Script = "https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source",
         Icon = 7733960981,
         Features = {"ESP", "Auto Win", "Speed", "Teleports"}
+    },
+    [9872472334] = { -- A Long Road
+        Name = "A Long Road",
+        Script = "BUILTIN", -- Special indicator for built-in script
+        Icon = 7733960981,
+        Features = {"Auto Drive", "Auto Collect", "Speed Hack", "Teleports", "Infinite Fuel"}
     }
 }
 
@@ -142,6 +148,7 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Lighting = game:GetService("Lighting")
 local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
 
 -- Local player
 local LocalPlayer = Players.LocalPlayer
@@ -153,6 +160,277 @@ local PlayerTab = Window:CreateTab("Player", 7733960981)
 local VisualsTab = Window:CreateTab("Visuals", 7733960981)
 local TeleportTab = Window:CreateTab("Teleport", 7733960981)
 local SettingsTab = Window:CreateTab("Settings", 7733960981)
+
+-- A Long Road specific variables
+local ALongRoadTab
+local ALongRoadSection
+local AutoDriveEnabled = false
+local AutoCollectEnabled = false
+local InfiniteFuelEnabled = false
+local VehicleSpeed = 50
+
+-- Function to load A Long Road specific script
+local function LoadALongRoadScript()
+    -- Create a dedicated tab for A Long Road
+    ALongRoadTab = Window:CreateTab("A Long Road", 7733960981)
+    ALongRoadSection = ALongRoadTab:CreateSection("A Long Road Cheats")
+    
+    -- Auto Drive Toggle
+    ALongRoadSection:CreateToggle({
+        Name = "Auto Drive",
+        CurrentValue = false,
+        Flag = "AutoDriveToggle",
+        Callback = function(Value)
+            AutoDriveEnabled = Value
+            if AutoDriveEnabled then
+                Rayfield:Notify({
+                    Title = "Auto Drive Enabled",
+                    Content = "Vehicle will drive automatically",
+                    Duration = 3,
+                    Image = 7733960981,
+                })
+                
+                -- Auto Drive logic
+                spawn(function()
+                    while AutoDriveEnabled do
+                        -- Find vehicle and make it drive forward
+                        local character = LocalPlayer.Character
+                        if character then
+                            local humanoid = character:FindFirstChild("Humanoid")
+                            if humanoid then
+                                humanoid:Move(Vector3.new(0, 0, -1)) -- Move forward
+                            end
+                        end
+                        wait(0.1)
+                    end
+                end)
+            else
+                Rayfield:Notify({
+                    Title = "Auto Drive Disabled",
+                    Content = "Manual control restored",
+                    Duration = 3,
+                    Image = 7733960981,
+                })
+            end
+        end,
+    })
+    
+    -- Auto Collect Toggle
+    ALongRoadSection:CreateToggle({
+        Name = "Auto Collect",
+        CurrentValue = false,
+        Flag = "AutoCollectToggle",
+        Callback = function(Value)
+            AutoCollectEnabled = Value
+            if AutoCollectEnabled then
+                Rayfield:Notify({
+                    Title = "Auto Collect Enabled",
+                    Content = "Automatically collecting resources",
+                    Duration = 3,
+                    Image = 7733960981,
+                })
+                
+                -- Auto Collect logic
+                spawn(function()
+                    while AutoCollectEnabled do
+                        -- Find and collect nearby resources
+                        for _, item in ipairs(workspace:GetChildren()) do
+                            if item.Name == "Resource" or item.Name == "Coin" or item.Name == "Collectible" then
+                                local charRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                                if charRoot and (charRoot.Position - item.Position).Magnitude < 20 then
+                                    firetouchinterest(charRoot, item, 0)
+                                    firetouchinterest(charRoot, item, 1)
+                                end
+                            end
+                        end
+                        wait(1)
+                    end
+                end)
+            else
+                Rayfield:Notify({
+                    Title = "Auto Collect Disabled",
+                    Content = "Manual collection required",
+                    Duration = 3,
+                    Image = 7733960981,
+                })
+            end
+        end,
+    })
+    
+    -- Infinite Fuel Toggle
+    ALongRoadSection:CreateToggle({
+        Name = "Infinite Fuel",
+        CurrentValue = false,
+        Flag = "InfiniteFuelToggle",
+        Callback = function(Value)
+            InfiniteFuelEnabled = Value
+            if InfiniteFuelEnabled then
+                Rayfield:Notify({
+                    Title = "Infinite Fuel Enabled",
+                    Content = "Fuel will never deplete",
+                    Duration = 3,
+                    Image = 7733960981,
+                })
+                
+                -- Infinite Fuel logic
+                spawn(function()
+                    while InfiniteFuelEnabled do
+                        -- Find and set fuel to max
+                        local character = LocalPlayer.Character
+                        if character then
+                            for _, part in ipairs(character:GetDescendants()) do
+                                if part.Name:lower():find("fuel") and part:IsA("NumberValue") then
+                                    part.Value = 100
+                                end
+                            end
+                            
+                            -- Check vehicle too
+                            for _, vehicle in ipairs(workspace:GetChildren()) do
+                                if vehicle:FindFirstChild("Seat") and vehicle.Seat:FindFirstChild("Occupant") then
+                                    if vehicle.Seat.Occupant == LocalPlayer.Character.Humanoid then
+                                        for _, part in ipairs(vehicle:GetDescendants()) do
+                                            if part.Name:lower():find("fuel") and part:IsA("NumberValue") then
+                                                part.Value = 100
+                                            end
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                        wait(1)
+                    end
+                end)
+            else
+                Rayfield:Notify({
+                    Title = "Infinite Fuel Disabled",
+                    Content = "Fuel consumption normal",
+                    Duration = 3,
+                    Image = 7733960981,
+                })
+            end
+        end,
+    })
+    
+    -- Vehicle Speed Slider
+    ALongRoadSection:CreateSlider({
+        Name = "Vehicle Speed",
+        Range = {10, 200},
+        Increment = 5,
+        Suffix = "speed",
+        CurrentValue = 50,
+        Flag = "VehicleSpeedSlider",
+        Callback = function(Value)
+            VehicleSpeed = Value
+            
+            -- Apply speed boost to vehicle
+            local character = LocalPlayer.Character
+            if character then
+                for _, vehicle in ipairs(workspace:GetChildren()) do
+                    if vehicle:FindFirstChild("Seat") and vehicle.Seat:FindFirstChild("Occupant") then
+                        if vehicle.Seat.Occupant == character.Humanoid then
+                            if vehicle:FindFirstChild("MaxSpeed") then
+                                vehicle.MaxSpeed.Value = Value
+                            end
+                        end
+                    end
+                end
+            end
+        end,
+    })
+    
+    -- Teleport to Checkpoint Button
+    ALongRoadSection:CreateButton({
+        Name = "Teleport to Next Checkpoint",
+        Callback = function()
+            -- Find the next checkpoint
+            local checkpoints = {}
+            for _, obj in ipairs(workspace:GetChildren()) do
+                if obj.Name:lower():find("checkpoint") or obj.Name:lower():find("cp") then
+                    table.insert(checkpoints, obj)
+                end
+            end
+            
+            -- Sort checkpoints by position
+            table.sort(checkpoints, function(a, b)
+                return a.Position.X < b.Position.X
+            end)
+            
+            -- Teleport to the next checkpoint
+            local charRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if charRoot and #checkpoints > 0 then
+                local targetCheckpoint = checkpoints[1]
+                
+                -- Find the farthest checkpoint we haven't passed yet
+                for _, checkpoint in ipairs(checkpoints) do
+                    if checkpoint.Position.X > charRoot.Position.X then
+                        targetCheckpoint = checkpoint
+                        break
+                    end
+                end
+                
+                charRoot.CFrame = CFrame.new(targetCheckpoint.Position + Vector3.new(0, 5, 0))
+                Rayfield:Notify({
+                    Title = "Teleported",
+                    Content = "Teleported to next checkpoint",
+                    Duration = 3,
+                    Image = 7733960981,
+                })
+            end
+        end,
+    })
+    
+    -- Instant Win Button
+    ALongRoadSection:CreateButton({
+        Name = "Instant Win (Teleport to End)",
+        Callback = function()
+            -- Find the finish line or end point
+            local finishLine
+            for _, obj in ipairs(workspace:GetChildren()) do
+                if obj.Name:lower():find("finish") or obj.Name:lower():find("end") then
+                    finishLine = obj
+                    break
+                end
+            end
+            
+            -- If no finish line found, try to find the farthest point
+            if not finishLine then
+                local farthestX = -math.huge
+                for _, obj in ipairs(workspace:GetChildren()) do
+                    if obj:IsA("Part") and obj.Position.X > farthestX then
+                        farthestX = obj.Position.X
+                        finishLine = obj
+                    end
+                end
+            end
+            
+            -- Teleport to finish line
+            local charRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if charRoot and finishLine then
+                charRoot.CFrame = CFrame.new(finishLine.Position + Vector3.new(0, 5, 0))
+                Rayfield:Notify({
+                    Title = "Teleported to Finish",
+                    Content = "You should win now!",
+                    Duration = 5,
+                    Image = 7733960981,
+                })
+            else
+                Rayfield:Notify({
+                    Title = "Error",
+                    Content = "Could not find finish line",
+                    Duration = 3,
+                    Image = 7733960981,
+                })
+            end
+        end,
+    })
+    
+    Rayfield:Notify({
+        Title = "A Long Road Cheats Loaded",
+        Content = "Special features enabled for A Long Road",
+        Duration = 5,
+        Image = 7733960981,
+    })
+end
 
 -- Game Loader Section
 local LoaderSection = MainTab:CreateSection("Game Detection & Loading")
@@ -184,7 +462,11 @@ if currentGame.Script then
             
             -- Load the game-specific script
             local success, err = pcall(function()
-                loadstring(game:HttpGet(currentGame.Script))()
+                if currentGame.Script == "BUILTIN" and currentGame.Name == "A Long Road" then
+                    LoadALongRoadScript()
+                else
+                    loadstring(game:HttpGet(currentGame.Script))()
+                end
             end)
             
             if success then
@@ -268,9 +550,9 @@ UniversalSection:CreateToggle({
       if AntiAFKEnabled then
          vu = game:GetService("VirtualUser")
          game:GetService("Players").LocalPlayer.Idled:connect(function()
-            vu:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+            vu:Button2Down(Vector3.new(0,0,0), workspace.CurrentCamera.CFrame)
             wait(1)
-            vu:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+            vu:Button2Up(Vector3.new(0,0,0), workspace.CurrentCamera.CFrame)
          end)
          Rayfield:Notify({
             Title = "Anti-AFK Enabled",
@@ -313,7 +595,7 @@ UniversalSection:CreateButton({
 UniversalSection:CreateButton({
    Name = "Rejoin Server",
    Callback = function()
-      TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
+      game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
    end,
 })
 
@@ -425,7 +707,30 @@ PlayerSection:CreateToggle({
             Duration = 5,
             Image = 7733960981,
          })
+         
+         -- Fly logic
+         local bodyVelocity = Instance.new("BodyVelocity")
+         bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+         bodyVelocity.MaxForce = Vector3.new(0, 0, 0)
+         bodyVelocity.Parent = LocalPlayer.Character.HumanoidRootPart
+         
+         UserInputService.InputBegan:Connect(function(input)
+            if input.KeyCode == Enum.KeyCode.E then
+               bodyVelocity.Velocity = Vector3.new(0, FlySpeed, 0)
+            elseif input.KeyCode == Enum.KeyCode.Q then
+               bodyVelocity.Velocity = Vector3.new(0, -FlySpeed, 0)
+            end
+         end)
+         
+         UserInputService.InputEnded:Connect(function(input)
+            if input.KeyCode == Enum.KeyCode.E or input.KeyCode == Enum.KeyCode.Q then
+               bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+            end
+         end)
       else
+         if LocalPlayer.Character.HumanoidRootPart:FindFirstChild("BodyVelocity") then
+            LocalPlayer.Character.HumanoidRootPart.BodyVelocity:Destroy()
+         end
          Rayfield:Notify({
             Title = "Fly Disabled",
             Content = "Flight mode deactivated",
@@ -484,6 +789,17 @@ VisualsSection:CreateToggle({
    Flag = "PlayerESPToggle",
    Callback = function(Value)
       if Value then
+         -- ESP logic
+         for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer then
+               local highlight = Instance.new("Highlight")
+               highlight.Parent = player.Character
+               highlight.FillColor = Color3.fromRGB(255, 0, 0)
+               highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+               highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+            end
+         end
+         
          Rayfield:Notify({
             Title = "Player ESP Enabled",
             Content = "Players highlighted through walls",
@@ -491,6 +807,17 @@ VisualsSection:CreateToggle({
             Image = 7733960981,
          })
       else
+         -- Remove ESP
+         for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character then
+               for _, highlight in ipairs(player.Character:GetChildren()) do
+                  if highlight:IsA("Highlight") then
+                     highlight:Destroy()
+                  end
+               end
+            end
+         end
+         
          Rayfield:Notify({
             Title = "Player ESP Disabled",
             Content = "Player highlighting disabled",
@@ -536,6 +863,13 @@ VisualsSection:CreateToggle({
    Flag = "XRayToggle",
    Callback = function(Value)
       if Value then
+         -- Make walls semi-transparent
+         for _, part in ipairs(workspace:GetDescendants()) do
+            if part:IsA("Part") and part.Name:lower():find("wall") then
+               part.Transparency = 0.5
+            end
+         end
+         
          Rayfield:Notify({
             Title = "X-Ray Enabled",
             Content = "Seeing through walls",
@@ -543,6 +877,13 @@ VisualsSection:CreateToggle({
             Image = 7733960981,
          })
       else
+         -- Restore wall opacity
+         for _, part in ipairs(workspace:GetDescendants()) do
+            if part:IsA("Part") and part.Name:lower():find("wall") then
+               part.Transparency = 0
+            end
+         end
+         
          Rayfield:Notify({
             Title = "X-Ray Disabled",
             Content = "Vision returned to normal",
