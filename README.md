@@ -2,6 +2,11 @@
 
 Welcome to Ryxohub! 
 
+# Where to Contact me
+
+Contact me (Direct) to this email: ryxohubsupport@proton.me
+
+
 ## Disclaimer
 
 By using this cheat, you acknowledge and agree to the following:
