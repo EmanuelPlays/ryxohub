@@ -1,13 +1,13 @@
-# Ryxohub
+# ®️Ryxohub
 
 Welcome to Ryxohub! 
 
-# Where to Contact me
+# 🛂 Where to Contact me
 
 Contact me (Direct) to this email: ryxohubsupport@proton.me
 
 
-## Disclaimer
+## ⚠️ Disclaimer
 
 By using this cheat, you acknowledge and agree to the following:
 
@@ -19,7 +19,7 @@ By using this cheat, you acknowledge and agree to the following:
 
 - **Copyright Notice**: You are not allowed to modify or re sell this product, if you do modify credit me otherwise you will have a dmca
 
-## Features (see other features in newest release)
+## 🪶 Features (see other features in newest release)
 
 
 ## 🎮 **Game Detection & Auto-Loading**
