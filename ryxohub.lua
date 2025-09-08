@@ -116,6 +116,16 @@ local currentGame = gameDatabase[currentGameId] or {
     Features = {"Universal Cheats"}
 }
 
+-- Services
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Lighting = game:GetService("Lighting")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+
+-- Local player
+local LocalPlayer = Players.LocalPlayer
+
 -- Create the main window
 local Window = Rayfield:CreateWindow({
    Name = "RyxoHub - Universal Loader",
@@ -143,18 +153,7 @@ local Window = Rayfield:CreateWindow({
    }
 })
 
--- Services
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local Lighting = game:GetService("Lighting")
-local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
-
--- Local player
-local LocalPlayer = Players.LocalPlayer
-
 -- Create tabs
-local MainTab = Window:CreateTab("Game Loader", 7733960981)
 local UniversalTab = Window:CreateTab("Universal", 7733960981)
 local PlayerTab = Window:CreateTab("Player", 7733960981)
 local VisualsTab = Window:CreateTab("Visuals", 7733960981)
@@ -192,7 +191,7 @@ local function LoadALongRoadScript()
                 
                 -- Auto Drive logic
                 spawn(function()
-                    while AutoDriveEnabled do
+                    while AutoDriveEnabled and RunService.Heartbeat:Wait() do
                         -- Find vehicle and make it drive forward
                         local character = LocalPlayer.Character
                         if character then
@@ -201,7 +200,6 @@ local function LoadALongRoadScript()
                                 humanoid:Move(Vector3.new(0, 0, -1)) -- Move forward
                             end
                         end
-                        wait(0.1)
                     end
                 end)
             else
@@ -232,7 +230,7 @@ local function LoadALongRoadScript()
                 
                 -- Auto Collect logic
                 spawn(function()
-                    while AutoCollectEnabled do
+                    while AutoCollectEnabled and RunService.Heartbeat:Wait() do
                         -- Find and collect nearby resources
                         for _, item in ipairs(workspace:GetChildren()) do
                             if item.Name == "Resource" or item.Name == "Coin" or item.Name == "Collectible" then
@@ -243,7 +241,6 @@ local function LoadALongRoadScript()
                                 end
                             end
                         end
-                        wait(1)
                     end
                 end)
             else
@@ -274,7 +271,7 @@ local function LoadALongRoadScript()
                 
                 -- Infinite Fuel logic
                 spawn(function()
-                    while InfiniteFuelEnabled do
+                    while InfiniteFuelEnabled and RunService.Heartbeat:Wait() do
                         -- Find and set fuel to max
                         local character = LocalPlayer.Character
                         if character then
@@ -297,7 +294,6 @@ local function LoadALongRoadScript()
                                 end
                             end
                         end
-                        wait(1)
                     end
                 end)
             else
@@ -432,109 +428,55 @@ local function LoadALongRoadScript()
     })
 end
 
--- Game Loader Section
-local LoaderSection = MainTab:CreateSection("Game Detection & Loading")
-
--- Display current game info
-LoaderSection:CreateParagraph({
-    Title = "Detected Game",
-    Content = currentGame.Name .. " (ID: " .. currentGameId .. ")"
-})
-
--- Display game features
-local featuresText = table.concat(currentGame.Features, ", ")
-LoaderSection:CreateParagraph({
-    Title = "Available Features",
-    Content = featuresText
-})
-
--- Load Game-Specific Script
-if currentGame.Script then
-    LoaderSection:CreateButton({
-        Name = "Load " .. currentGame.Name .. " Script",
-        Callback = function()
+-- Function to load game script automatically
+local function LoadGameScript()
+    if currentGame.Script then
+        Rayfield:Notify({
+            Title = "Loading Game Script",
+            Content = "Loading " .. currentGame.Name .. " cheats...",
+            Duration = 3,
+            Image = currentGame.Icon,
+        })
+        
+        -- Load the game-specific script
+        local success, err = pcall(function()
+            if currentGame.Script == "BUILTIN" and currentGame.Name == "A Long Road" then
+                LoadALongRoadScript()
+            else
+                loadstring(game:HttpGet(currentGame.Script))()
+            end
+        end)
+        
+        if success then
             Rayfield:Notify({
-                Title = "Loading Game Script",
-                Content = "Loading " .. currentGame.Name .. " cheats...",
-                Duration = 3,
+                Title = "Script Loaded Successfully",
+                Content = currentGame.Name .. " cheats activated!",
+                Duration = 5,
                 Image = currentGame.Icon,
             })
-            
-            -- Load the game-specific script
-            local success, err = pcall(function()
-                if currentGame.Script == "BUILTIN" and currentGame.Name == "A Long Road" then
-                    LoadALongRoadScript()
-                else
-                    loadstring(game:HttpGet(currentGame.Script))()
-                end
-            end)
-            
-            if success then
-                Rayfield:Notify({
-                    Title = "Script Loaded Successfully",
-                    Content = currentGame.Name .. " cheats activated!",
-                    Duration = 5,
-                    Image = currentGame.Icon,
-                })
-            else
-                Rayfield:Notify({
-                    Title = "Script Load Failed",
-                    Content = "Error: " .. tostring(err),
-                    Duration = 6,
-                    Image = currentGame.Icon,
-                })
-            end
-        end,
-    })
-else
-    LoaderSection:CreateParagraph({
-        Title = "No Game-Specific Script",
-        Content = "Using universal cheats only for this game."
-    })
-end
-
--- Manual Game Selection
-local gameOptions = {}
-for id, gameInfo in pairs(gameDatabase) do
-    table.insert(gameOptions, gameInfo.Name)
-end
-
-table.sort(gameOptions)
-
-local gameDropdown = LoaderSection:CreateDropdown({
-    Name = "Manual Game Selection",
-    Options = gameOptions,
-    CurrentOption = currentGame.Name,
-    Flag = "GameDropdown",
-    Callback = function(Option)
-        -- Find the game ID from the selected name
-        for id, gameInfo in pairs(gameDatabase) do
-            if gameInfo.Name == Option then
-                Rayfield:Notify({
-                    Title = "Game Selected",
-                    Content = "Selected: " .. Option,
-                    Duration = 3,
-                    Image = 7733960981,
-                })
-                break
-            end
+        else
+            Rayfield:Notify({
+                Title = "Script Load Failed",
+                Content = "Error: " .. tostring(err),
+                Duration = 6,
+                Image = currentGame.Icon,
+            })
         end
-    end,
-})
-
--- Load Infinite Yield (Universal)
-LoaderSection:CreateButton({
-    Name = "Load Infinite Yield (Universal)",
-    Callback = function()
-        loadstring(game:HttpGet('https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source'))()
+    else
         Rayfield:Notify({
-            Title = "Infinite Yield Loaded",
-            Content = "Press F9 to view commands",
-            Duration = 6.5,
-            Image = 7733960981,
+            Title = "No Game-Specific Script",
+            Content = "Using universal cheats only for " .. currentGame.Name,
+            Duration = 5,
+            Image = currentGame.Icon,
         })
-    end,
-})
+    end
+end
+
+-- Load the game script automatically on start
+spawn(function()
+    wait(1) -- Wait a moment for UI to fully load
+    LoadGameScript()
+end)
 
 -- Universal Cheats Section
 local UniversalSection = UniversalTab:CreateSection("Universal Cheats")
@@ -548,7 +490,7 @@ UniversalSection:CreateToggle({
    Callback = function(Value)
       AntiAFKEnabled = Value
       if AntiAFKEnabled then
-         vu = game:GetService("VirtualUser")
+         local vu = game:GetService("VirtualUser")
          game:GetService("Players").LocalPlayer.Idled:connect(function()
             vu:Button2Down(Vector3.new(0,0,0), workspace.CurrentCamera.CFrame)
             wait(1)
@@ -637,9 +579,13 @@ PlayerSection:CreateToggle({
    Callback = function(Value)
       SpeedEnabled = Value
       if SpeedEnabled then
-         game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = SpeedValue
+         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            LocalPlayer.Character.Humanoid.WalkSpeed = SpeedValue
+         end
       else
-         game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = 16
+         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            LocalPlayer.Character.Humanoid.WalkSpeed = 16
+         end
       end
    end,
 })
@@ -653,8 +599,8 @@ PlayerSection:CreateSlider({
    Flag = "SpeedSlider",
    Callback = function(Value)
       SpeedValue = Value
-      if SpeedEnabled then
-         game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = Value
+      if SpeedEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+         LocalPlayer.Character.Humanoid.WalkSpeed = Value
       end
    end,
 })
@@ -669,9 +615,13 @@ PlayerSection:CreateToggle({
    Callback = function(Value)
       JumpEnabled = Value
       if JumpEnabled then
-         game.Players.LocalPlayer.Character.Humanoid.JumpPower = JumpValue
+         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            LocalPlayer.Character.Humanoid.JumpPower = JumpValue
+         end
       else
-         game.Players.LocalPlayer.Character.Humanoid.JumpPower = 50
+         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            LocalPlayer.Character.Humanoid.JumpPower = 50
+         end
       end
    end,
 })
@@ -685,8 +635,8 @@ PlayerSection:CreateSlider({
    Flag = "JumpSlider",
    Callback = function(Value)
       JumpValue = Value
-      if JumpEnabled then
-         game.Players.LocalPlayer.Character.Humanoid.JumpPower = Value
+      if JumpEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+         LocalPlayer.Character.Humanoid.JumpPower = Value
       end
    end,
 })
@@ -694,6 +644,8 @@ PlayerSection:CreateSlider({
 -- Fly
 local FlyEnabled = false
 local FlySpeed = 50
+local FlyBodyVelocity
+
 PlayerSection:CreateToggle({
    Name = "Fly",
    CurrentValue = false,
@@ -709,27 +661,37 @@ PlayerSection:CreateToggle({
          })
          
          -- Fly logic
-         local bodyVelocity = Instance.new("BodyVelocity")
-         bodyVelocity.Velocity = Vector3.new(0, 0, 0)
-         bodyVelocity.MaxForce = Vector3.new(0, 0, 0)
-         bodyVelocity.Parent = LocalPlayer.Character.HumanoidRootPart
+         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            FlyBodyVelocity = Instance.new("BodyVelocity")
+            FlyBodyVelocity.Velocity = Vector3.new(0, 0, 0)
+            FlyBodyVelocity.MaxForce = Vector3.new(0, math.huge, 0)
+            FlyBodyVelocity.Parent = LocalPlayer.Character.HumanoidRootPart
+         end
          
-         UserInputService.InputBegan:Connect(function(input)
+         local flyConnection
+         flyConnection = UserInputService.InputBegan:Connect(function(input)
             if input.KeyCode == Enum.KeyCode.E then
-               bodyVelocity.Velocity = Vector3.new(0, FlySpeed, 0)
+               if FlyBodyVelocity then
+                  FlyBodyVelocity.Velocity = Vector3.new(0, FlySpeed, 0)
+               end
             elseif input.KeyCode == Enum.KeyCode.Q then
-               bodyVelocity.Velocity = Vector3.new(0, -FlySpeed, 0)
+               if FlyBodyVelocity then
+                  FlyBodyVelocity.Velocity = Vector3.new(0, -FlySpeed, 0)
+               end
             end
          end)
          
          UserInputService.InputEnded:Connect(function(input)
             if input.KeyCode == Enum.KeyCode.E or input.KeyCode == Enum.KeyCode.Q then
-               bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+               if FlyBodyVelocity then
+                  FlyBodyVelocity.Velocity = Vector3.new(0, 0, 0)
+               end
             end
          end)
       else
-         if LocalPlayer.Character.HumanoidRootPart:FindFirstChild("BodyVelocity") then
-            LocalPlayer.Character.HumanoidRootPart.BodyVelocity:Destroy()
+         if FlyBodyVelocity then
+            FlyBodyVelocity:Destroy()
+            FlyBodyVelocity = nil
          end
          Rayfield:Notify({
             Title = "Fly Disabled",
@@ -783,6 +745,7 @@ PlayerSection:CreateToggle({
 local VisualsSection = VisualsTab:CreateSection("Visual Enhancements")
 
 -- ESP
+local ESPHighlights = {}
 VisualsSection:CreateToggle({
    Name = "Player ESP",
    CurrentValue = false,
@@ -791,14 +754,29 @@ VisualsSection:CreateToggle({
       if Value then
          -- ESP logic
          for _, player in ipairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer then
+            if player ~= LocalPlayer and player.Character then
                local highlight = Instance.new("Highlight")
                highlight.Parent = player.Character
                highlight.FillColor = Color3.fromRGB(255, 0, 0)
                highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
                highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+               ESPHighlights[player] = highlight
             end
          end
+         
+         -- Connect to new players
+         Players.PlayerAdded:Connect(function(player)
+            player.CharacterAdded:Connect(function(character)
+               if player ~= LocalPlayer then
+                  local highlight = Instance.new("Highlight")
+                  highlight.Parent = character
+                  highlight.FillColor = Color3.fromRGB(255, 0, 0)
+                  highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                  highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                  ESPHighlights[player] = highlight
+               end
+            end)
+         end)
          
          Rayfield:Notify({
             Title = "Player ESP Enabled",
@@ -808,15 +786,12 @@ VisualsSection:CreateToggle({
          })
       else
          -- Remove ESP
-         for _, player in ipairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer and player.Character then
-               for _, highlight in ipairs(player.Character:GetChildren()) do
-                  if highlight:IsA("Highlight") then
-                     highlight:Destroy()
-                  end
-               end
+         for player, highlight in pairs(ESPHighlights) do
+            if highlight then
+               highlight:Destroy()
             end
          end
+         ESPHighlights = {}
          
          Rayfield:Notify({
             Title = "Player ESP Disabled",
@@ -837,7 +812,8 @@ VisualsSection:CreateToggle({
    Callback = function(Value)
       FullBrightEnabled = Value
       if FullBrightEnabled then
-         game:GetService("Lighting").GlobalShadows = false
+         Lighting.GlobalShadows = false
+         Lighting.ClockTime = 14
          Rayfield:Notify({
             Title = "FullBright Enabled",
             Content = "Maximum brightness activated",
@@ -845,7 +821,7 @@ VisualsSection:CreateToggle({
             Image = 7733960981,
          })
       else
-         game:GetService("Lighting").GlobalShadows = true
+         Lighting.GlobalShadows = true
          Rayfield:Notify({
             Title = "FullBright Disabled",
             Content = "Lighting returned to normal",
@@ -865,7 +841,7 @@ VisualsSection:CreateToggle({
       if Value then
          -- Make walls semi-transparent
          for _, part in ipairs(workspace:GetDescendants()) do
-            if part:IsA("Part") and part.Name:lower():find("wall") then
+            if part:IsA("Part") and (part.Name:lower():find("wall") or part.Name:lower():find("building")) then
                part.Transparency = 0.5
             end
          end
@@ -879,7 +855,7 @@ VisualsSection:CreateToggle({
       else
          -- Restore wall opacity
          for _, part in ipairs(workspace:GetDescendants()) do
-            if part:IsA("Part") and part.Name:lower():find("wall") then
+            if part:IsA("Part") and (part.Name:lower():find("wall") or part.Name:lower():find("building")) then
                part.Transparency = 0
             end
          end
@@ -912,8 +888,8 @@ TeleportSection:CreateButton({
    Name = "Refresh Player List",
    Callback = function()
       local players = {}
-      for _, player in ipairs(game.Players:GetPlayers()) do
-         if player ~= game.Players.LocalPlayer then
+      for _, player in ipairs(Players:GetPlayers()) do
+         if player ~= LocalPlayer then
             table.insert(players, player.Name)
          end
       end
@@ -927,10 +903,10 @@ TeleportSection:CreateButton({
    Callback = function()
       local selectedPlayer = playerDropdown.CurrentOption
       if selectedPlayer and selectedPlayer ~= "" then
-         local targetPlayer = game.Players[selectedPlayer]
+         local targetPlayer = Players[selectedPlayer]
          if targetPlayer and targetPlayer.Character then
             local targetRoot = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
-            local localRoot = game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            local localRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
             
             if targetRoot and localRoot then
                localRoot.CFrame = targetRoot.CFrame
@@ -991,11 +967,11 @@ SettingsSection:CreateButton({
 })
 
 -- Initialize player dropdown on load
-task.spawn(function()
+spawn(function()
    wait(2)
    local players = {}
-   for _, player in ipairs(game.Players:GetPlayers()) do
-      if player ~= game.Players.LocalPlayer then
+   for _, player in ipairs(Players:GetPlayers()) do
+      if player ~= LocalPlayer then
          table.insert(players, player.Name)
       end
    end
